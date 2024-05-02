@@ -5,6 +5,11 @@ import globals
 def evaluate_fitness(virtual_creature):
     # TODO: team to dream up more complicated measures, but right now
     # we just want it to move a lot laterally and not go too far down
+
+    # TODO rollout the forward dynamics for the virtual creature 
+    # for some number of timesteps, then compute fitness based
+    # on performance
+
     fitness = 0
 
     # Move a lot laterally (in xy plane)
