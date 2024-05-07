@@ -1,7 +1,5 @@
 import numpy as np 
 
-from globals import CHROMOSOME_DEFINITION
-
 class Gene:
     """
     Helper class to store a named gene and explicitly define
@@ -14,6 +12,8 @@ class Gene:
         self.name = name
         self.min_val = min_val
         self.max_val = max_val
+
+from globals import CHROMOSOME_DEFINITION
 
 class Chromosome:
     """

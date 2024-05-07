@@ -19,12 +19,7 @@ class VirtualCreature:
         self.chromosome = chromosome
 
         # Kinematic parameters (describe it in the world)
-        self.update_state(
-            position_xyz=np.zeros(3),
-            velocity_xyz=np.zeros(3),
-            acceleration_xyz=np.zeros(3),
-            rotation_xyz=np.zeros(3),
-        )
+        self.reset_state()
 
         # TODO: Kusal please feel free to add other kinematic parameters
         # here (note that these are not genes! they are the state of the
@@ -53,6 +48,17 @@ class VirtualCreature:
         self.velocity_xyz = velocity_xyz         # m/s
         self.acceleration_xyz = acceleration_xyz # m/s^2
         self.rotation_xyz = rotation_xyz         # rad
+    
+    def reset_state(self):
+        """
+        Resets the state of the virtual creature
+        """
+        self.update_state(
+            position_xyz=np.zeros(3),
+            velocity_xyz=np.zeros(3),
+            acceleration_xyz=np.zeros(3),
+            rotation_xyz=np.zeros(3),
+        )
 
     def mutate(self, mutation_rate):
         """

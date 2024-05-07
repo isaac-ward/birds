@@ -1,5 +1,6 @@
 import numpy as np
 
+from dynamics import forward_step
 import globals
 
 def evaluate_fitness(virtual_creature):
@@ -9,6 +10,11 @@ def evaluate_fitness(virtual_creature):
     # TODO rollout the forward dynamics for the virtual creature 
     # for some number of timesteps, then compute fitness based
     # on performance
+
+    # Ensure the creature's state is reset
+    virtual_creature.reset_state()
+
+    # forward_step(virtual_creature)
 
     fitness = 0
 

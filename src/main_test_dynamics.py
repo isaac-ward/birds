@@ -10,6 +10,11 @@ if __name__ == "__main__":
     # Make a random creature
     creature = VirtualCreature.random_init()
 
+    # Can reset the creature's state
+    creature.reset_state()
+
+    print(creature)
+
     # Run the creature for a few steps
     num_steps = 8
     for _ in range(num_steps):
