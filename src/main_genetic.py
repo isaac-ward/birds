@@ -3,7 +3,7 @@ import numpy as np
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
-from genetic.selection import evaluate_fitness, select_fittest_individuals
+from genetic.fitness import evaluate_fitness, select_fittest_individuals
 
 def solve_ga(
     population_size=128,

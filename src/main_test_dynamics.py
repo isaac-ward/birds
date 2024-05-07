@@ -2,7 +2,7 @@ import os
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
-from genetic.selection import evaluate_fitness, select_fittest_individuals
+from genetic.fitness import evaluate_fitness, select_fittest_individuals
 from dynamics import forward_step
 
 if __name__ == "__main__":
