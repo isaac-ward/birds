@@ -36,5 +36,6 @@ TOO_LOW_Z = -100
 FITNESS_PENALTY_TOO_LOW = -np.inf
 
 # Global aerodynamic parameters
-air_density = 1.225     #kg/m^3
-gravity = 9.81          #m/s^2
+air_density = 1.225             #kg/m^3
+gravity_acceleration = 9.81     #m/s^2
+bird_density = 10               #kg/m^3
