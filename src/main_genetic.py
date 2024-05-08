@@ -17,10 +17,10 @@ def solve_ga(
     for generation_index in range(num_generations):
 
         # Evaluate the fitness of each individual in the population
-        fitness_scores = [ evaluate_fitness(individual) for individual in population ]
+        fitness_scores = [evaluate_fitness(individual) for individual in population ]
 
         # Select the fittest individuals to be parents
-        parents = select_fittest_individuals(population, fitness_scores, num_parents=num_parents_per_generation)
+        parents = select_fittest_individuals(population, fitness_scores, num_parents=num_parents_per_generation, method="truncation") #can be truncation, tournament, roulette for method
 
         # Create the next generation by crossing over and mutating the parents
         children = []
