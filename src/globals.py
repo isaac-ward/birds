@@ -18,9 +18,14 @@ from genetic.chromosome import Gene
 # and their feasible ranges
 CHROMOSOME_DEFINITION = [
     # Gene(gene_name, min_val, max_val)
-    Gene("wingspan", 0.0, 1.0),
-    Gene("segment_crossover_point", 0.0, 1.0),
-    Gene("segment_length", 0.0, 1.0),
+    Gene("wingspan", 0.0, 10.0),
+    Gene("norm_wrist_position", 0.0, 10.0),
+    Gene("wing_root_chord", 0.0, 1.0),
+    Gene("taper_armwing", 0.0, 1.0),
+    Gene("taper_handwing", 0.0, 1.0),
+    Gene("COG_position", 0.0, 1.0),
+    Gene("airfoil_armwing", 0.0, 1.0), #NOTE: Change later
+    Gene("airfoil_handwing", 0.0, 1.0) #NOTE: Change later
 ]
 
 # If you go too low it's negative infinity, so you never
@@ -29,3 +34,7 @@ CHROMOSOME_DEFINITION = [
 # is negative z
 TOO_LOW_Z = -100
 FITNESS_PENALTY_TOO_LOW = -np.inf
+
+# Global aerodynamic parameters
+air_density = 1.225     #kg/m^3
+gravity = 9.81          #m/s^2

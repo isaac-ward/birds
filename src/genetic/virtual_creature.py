@@ -39,15 +39,17 @@ class VirtualCreature:
         velocity_xyz,
         acceleration_xyz,
         rotation_xyz,
+        wing_angle,
     ):
         """
         Updates the state of the virtual creature by one step
         """
-        # +x is forward, +y is right, +z is up
+        # +x is forward, +y is up, +z is right
         self.position_xyz = position_xyz         # m
         self.velocity_xyz = velocity_xyz         # m/s
         self.acceleration_xyz = acceleration_xyz # m/s^2
         self.rotation_xyz = rotation_xyz         # rad
+        self.wing_angle = wing_angle             # rad
     
     def reset_state(self):
         """
