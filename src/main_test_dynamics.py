@@ -16,9 +16,9 @@ if __name__ == "__main__":
     print(creature)
 
     # Run the creature for a few steps
-    num_steps = 8
+    num_steps = 800
     for _ in range(num_steps):
         print(f"step {_}:\n")
         print(creature)
-        forward_step(creature)
+        forward_step(creature, 0.01)
     print(creature)

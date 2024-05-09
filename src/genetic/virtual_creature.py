@@ -59,11 +59,11 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.zeros(3),
+            velocity_xyz=np.array([10, 0, 0]),
             acceleration_xyz=np.zeros(3),
             rotation_xyz=np.zeros(3),
             angular_velocity=np.zeros(3),
-            wing_angle=np.zeros(3)
+            wing_angle=0.0873
         )
 
     def mutate(self, mutation_rate):

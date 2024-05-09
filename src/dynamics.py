@@ -17,7 +17,7 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     # 4) cD0
 
     airfoil_database = {
-        "NACA 0012": [0.00204, -0.122173, 0.122173, 5.72958]
+        "NACA 0012": [5.72958, -0.122173, 0.122173, 0.021]
     }
     [dcLdAlpha, alpha_min, alpha_max, cD0] = airfoil_database[airfoil]
     cL = dcLdAlpha * alpha
@@ -25,7 +25,7 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     if alpha < alpha_min or alpha > alpha_max:
         cL = 0
 
-    e = 1.78 * (1 - 0.045 * AR^0.68) - 0.64
+    e = 1.78 * (1 - 0.045 * AR**0.68) - 0.64
     cD = cD0 + cL**2 / (np.pi * e * AR)
 
     L = 0.5*rho_inf*cL*S*V_inf**2
@@ -44,6 +44,8 @@ def get_wing_parameters(virtual_creature):
     taper_armwing, taper_handwing, COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.COG_position
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
     bird_density = globals.BIRD_DENSITY
+
+    airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Wing characteristics
     span_aw = wingspan * norm_wrist_position
@@ -75,9 +77,9 @@ def get_wing_parameters(virtual_creature):
     b2 = (1+norm_wrist_position)/2 * wingspan
     b3 = norm_wrist_position/2 * wingspan
     t = (chord_thickness_aw+chord_thickness_hw)/2
-    m1 = bird_density*c1*b1*t
-    m2 = bird_density*c2*b2*t
-    m3 = bird_density*c3*b3*t
+    m1 = c1*b1/(c1*b1+c2*b2+c3*b3)*bird_mass
+    m2 = c2*b2/(c1*b1+c2*b2+c3*b3)*bird_mass
+    m3 = c3*b3/(c1*b1+c2*b2+c3*b3)*bird_mass
     x_COG1 = c3 + c2 + c1/2
     x_COG2 = c3 + c2/2
     x_COG3 = c3/2
@@ -115,6 +117,8 @@ def forward_step(virtual_creature, dt=1.0):
     # Pull chromosome data
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
     rho_inf, rho_bird, g = globals.AIR_DENSITY, globals.BIRD_DENSITY, globals.GRAVITY
+
+    airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Get wing parameters
     AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)

@@ -7,7 +7,7 @@ from genetic.chromosome import Gene
 CHROMOSOME_DEFINITION = [
     # Gene(gene_name, min_val, max_val)
     Gene("wingspan", 0.0, 10.0),
-    Gene("norm_wrist_position", 0.0, 10.0),
+    Gene("norm_wrist_position", 0.0, 1.0),
     Gene("wing_root_chord", 0.0, 1.0),
     Gene("taper_armwing", 0.0, 1.0),
     Gene("taper_handwing", 0.0, 1.0),
