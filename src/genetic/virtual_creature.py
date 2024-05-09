@@ -95,11 +95,11 @@ class VirtualCreature:
         # Write out the state
         s += "----------------\n"
         s += "state:\n"
-        s += f"p = {self.position_xyz}\n"
-        s += f"v = {self.velocity_xyz}\n"
-        s += f"a = {self.acceleration_xyz}\n"
-        s += f"r = {self.rotation_xyz}\n"
-        s += f"omega = {self.angular_velocity}\n"
+        s += f"p  = {self.position_xyz}\n"
+        s += f"v  = {self.velocity_xyz}\n"
+        s += f"a  = {self.acceleration_xyz}\n"
+        s += f"r  = {self.rotation_xyz}\n"
+        s += f"r' = {self.angular_velocity}\n"
         s += f"wa = {self.wing_angle}\n"
         s += "\n"
         # Write out the chromosome

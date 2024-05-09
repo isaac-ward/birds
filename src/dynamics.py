@@ -1,10 +1,6 @@
 import numpy as np
 import globals
 
-# TODO: Kusal to implement how the state evolves at every step 
-# starting with a single virtual creature in a simple aerodynamic
-# environment/model
-
 def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, rho_inf:float):
     # inputs:
     # - airfoil: airfoilf name
@@ -47,7 +43,7 @@ def get_wing_parameters(virtual_creature):
     wingspan, norm_wrist_position, wing_root_chord = virtual_creature.chromosome.wingspan, virtual_creature.chromosome.norm_wrist_position, virtual_creature.chromosome.wing_root_chord
     taper_armwing, taper_handwing, COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.COG_position
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
-    bird_density = globals.bird_density
+    bird_density = globals.BIRD_DENSITY
 
     # Wing characteristics
     span_aw = wingspan * norm_wrist_position
@@ -100,21 +96,25 @@ def get_wing_parameters(virtual_creature):
 
     return AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz
 
-
-def forward_step(virtual_creature, dt):
+def forward_step(virtual_creature, dt=1.0):
     """
     Takes a virtual creature and updates its state by one step based on
     it's current state and the aerodynamic environment
+
+    dt units are in seconds
     """
     
     # +x is forward, +y is right, +z is up
-    p, v, a, r, wa, omega = virtual_creature.position_xyz, virtual_creature.velocity_xyz, virtual_creature.rotation_xyz, virtual_creature.wing_angle, virtual_creature.angular_velocity
+    p = virtual_creature.position_xyz
+    v = virtual_creature.velocity_xyz
+    a = virtual_creature.acceleration_xyz
+    r = virtual_creature.rotation_xyz
+    omega = virtual_creature.angular_velocity
+    wa = virtual_creature.wing_angle
 
-    # TODO: Do all the funky physics here and compute new state
-    # Can access the genes of the chromosome like this:
     # Pull chromosome data
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
-    rho_inf, rho_bird, g = globals.air_density, globals.bird_density, globals.gravity_acceleration
+    rho_inf, rho_bird, g = globals.AIR_DENSITY, globals.BIRD_DENSITY, globals.GRAVITY
 
     # Get wing parameters
     AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
