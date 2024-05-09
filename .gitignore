@@ -1,5 +1,6 @@
 logs/*
 !.gitkeep
+.conda
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
