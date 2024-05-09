@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sci
 import globals
 
 # TODO: Kusal to implement how the state evolves at every step 
@@ -48,6 +47,7 @@ def get_wing_parameters(virtual_creature):
     wingspan, norm_wrist_position, wing_root_chord = virtual_creature.chromosome.wingspan, virtual_creature.chromosome.norm_wrist_position, virtual_creature.chromosome.wing_root_chord
     taper_armwing, taper_handwing, COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.COG_position
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
+    bird_density = globals.bird_density
 
     # Wing characteristics
     span_aw = wingspan * norm_wrist_position
@@ -66,16 +66,39 @@ def get_wing_parameters(virtual_creature):
     # Wing volume
     chord_thickness_aw = get_airfoil_thickness(airfoil_armwing)
     chord_thickness_hw = get_airfoil_thickness(airfoil_handwing)
-    wing_volume_aw = chord_avg_aw**2 * span_aw * chord_avg_aw
-    wing_volume_hw = chord_avg_hw**2 * span_hw * chord_avg_hw
+    wing_volume_aw = chord_avg_aw**2 * span_aw * chord_thickness_aw
+    wing_volume_hw = chord_avg_hw**2 * span_hw * chord_thickness_hw
     bird_volume = wing_volume_aw + wing_volume_hw
+    bird_mass = bird_volume * bird_density
 
     # Moment of inertia
-    Ix = 1
-    Iy = 1
-    Iz = 0
+    c1 = taper_armwing * taper_handwing * wing_root_chord
+    c2 = (1-taper_handwing) * taper_armwing * wing_root_chord
+    c3 = (1-taper_armwing) * wing_root_chord
+    b1 = wingspan
+    b2 = (1+norm_wrist_position)/2 * wingspan
+    b3 = norm_wrist_position/2 * wingspan
+    t = (chord_thickness_aw+chord_thickness_hw)/2
+    m1 = bird_density*c1*b1*t
+    m2 = bird_density*c2*b2*t
+    m3 = bird_density*c3*b3*t
+    x_COG1 = c3 + c2 + c1/2
+    x_COG2 = c3 + c2/2
+    x_COG3 = c3/2
+    Ix_COG1 = m1*b1**2/12
+    Iy1 = m1*(b1**2 + c1**2)/12
+    Iz1 = m1*c1**2/12
+    Ix_COG2 = m2*b2**2/12
+    Iy2 = m2*(b2**2 + c2**2)/12
+    Iz2 = m2*c2**2/12
+    Ix_COG3 = m3*b3**2/12
+    Iy3 = m3*(b3**2 + c3**2)/12
+    Iz3 = m3*c3**2/12
+    Ix = Ix_COG1 + m1*(COG_position-x_COG1)**2 + Ix_COG2 + m2*(COG_position-x_COG2)**2 + Ix_COG3 + m3*(COG_position-x_COG3)**2
+    Iy = Iy1 + Iy2 + Iy3
+    Iz = Iz1 + Iz2 + Iz3
 
-    return AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_volume, Ix, Iy, Iz
+    return AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz
 
 
 def forward_step(virtual_creature, dt):
@@ -94,7 +117,7 @@ def forward_step(virtual_creature, dt):
     rho_inf, rho_bird, g = globals.air_density, globals.bird_density, globals.gravity_acceleration
 
     # Get wing parameters
-    AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_volume, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
+    AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
 
     # Find angle of attack & V_inf
     angle_of_attack = wa + r[1]
@@ -116,7 +139,6 @@ def forward_step(virtual_creature, dt):
                                  rho_inf=rho_inf)
     
     # Calculate key forces
-    bird_mass = rho_bird * bird_volume
     lift = lift_aw + lift_hw
     drag = drag_aw + drag_hw
     weight = bird_mass * g
@@ -143,5 +165,4 @@ def forward_step(virtual_creature, dt):
         rotation_xyz=r,
         angular_velocity=omega,
         wing_angle=wa,
-        
     )
