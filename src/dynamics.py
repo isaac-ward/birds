@@ -164,7 +164,7 @@ def forward_step(virtual_creature, dt=1.0):
     p = p + dt*v
 
     omega_dot = np.array([0, 0, 0])
-    omega_dot[2] = lift/Iz * (COG_position - COL_position)
+    omega_dot[2] = lift_y/Iz * (COG_position - COL_position)
     omega = omega + omega_dot*dt
 
     r = r + dt*omega
