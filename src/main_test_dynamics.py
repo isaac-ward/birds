@@ -15,7 +15,8 @@ if __name__ == "__main__":
     log_folder = utils.make_log_folder()
     
     # Make a random creature
-    creature = VirtualCreature.random_init()
+    # creature = VirtualCreature.random_init()
+    creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.24, 0.0, 0.0]))
 
     # Plot what it looks like
     visuals.render_virtual_creature(

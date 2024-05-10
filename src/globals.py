@@ -20,3 +20,8 @@ CHROMOSOME_DEFINITION = [
 AIR_DENSITY = 1.225 #kg/m^3
 GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
+
+# Global functions
+def wrapRads(angle:float) -> float:
+    wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi
+    return wrapped_angle

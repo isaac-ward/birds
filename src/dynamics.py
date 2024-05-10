@@ -69,32 +69,37 @@ def get_wing_parameters(virtual_creature):
     bird_volume = wing_volume_aw + wing_volume_hw
     bird_mass = bird_volume * bird_density
 
-    # Moment of inertia
-    c1 = taper_armwing * taper_handwing * wing_root_chord
-    c2 = (1-taper_handwing) * taper_armwing * wing_root_chord
-    c3 = (1-taper_armwing) * wing_root_chord
-    b1 = wingspan
-    b2 = (1+norm_wrist_position)/2 * wingspan
-    b3 = norm_wrist_position/2 * wingspan
-    t = (chord_thickness_aw+chord_thickness_hw)/2
-    m1 = c1*b1/(c1*b1+c2*b2+c3*b3)*bird_mass
-    m2 = c2*b2/(c1*b1+c2*b2+c3*b3)*bird_mass
-    m3 = c3*b3/(c1*b1+c2*b2+c3*b3)*bird_mass
-    x_COG1 = c3 + c2 + c1/2
-    x_COG2 = c3 + c2/2
-    x_COG3 = c3/2
-    Ix_COG1 = m1*b1**2/12
-    Iy1 = m1*(b1**2 + c1**2)/12
-    Iz1 = m1*c1**2/12
-    Ix_COG2 = m2*b2**2/12
-    Iy2 = m2*(b2**2 + c2**2)/12
-    Iz2 = m2*c2**2/12
-    Ix_COG3 = m3*b3**2/12
-    Iy3 = m3*(b3**2 + c3**2)/12
-    Iz3 = m3*c3**2/12
-    Ix = Ix_COG1 + m1*(COG_position-x_COG1)**2 + Ix_COG2 + m2*(COG_position-x_COG2)**2 + Ix_COG3 + m3*(COG_position-x_COG3)**2
-    Iy = Iy1 + Iy2 + Iy3
-    Iz = Iz1 + Iz2 + Iz3
+    # # Moment of inertia
+    # c1 = taper_armwing * taper_handwing * wing_root_chord
+    # c2 = (1-taper_handwing) * taper_armwing * wing_root_chord
+    # c3 = (1-taper_armwing) * wing_root_chord
+    # b1 = wingspan
+    # b2 = (1+norm_wrist_position)/2 * wingspan
+    # b3 = norm_wrist_position/2 * wingspan
+    # m1 = c1*b1/(c1*b1+c2*b2+c3*b3)*bird_mass
+    # m2 = c2*b2/(c1*b1+c2*b2+c3*b3)*bird_mass
+    # m3 = c3*b3/(c1*b1+c2*b2+c3*b3)*bird_mass
+    # x_COG1 = c3 + c2 + c1/2
+    # x_COG2 = c3 + c2/2
+    # x_COG3 = c3/2
+    # Ix_COG1 = m1*b1**2/12
+    # Iy1 = m1*(b1**2 + c1**2)/12
+    # Iz1 = m1*c1**2/12
+    # Ix_COG2 = m2*b2**2/12
+    # Iy2 = m2*(b2**2 + c2**2)/12
+    # Iz2 = m2*c2**2/12
+    # Ix_COG3 = m3*b3**2/12
+    # Iy3 = m3*(b3**2 + c3**2)/12
+    # Iz3 = m3*c3**2/12
+    # Ix = Ix_COG1 + m1*(COG_position-x_COG1)**2 + Ix_COG2 + m2*(COG_position-x_COG2)**2 + Ix_COG3 + m3*(COG_position-x_COG3)**2
+    # Iy = Iy1 + Iy2 + Iy3
+    # Iz = Iz1 + Iz2 + Iz3
+
+    # Moment of Inertia (simplified)
+    span_avg = (area_aw + area_hw) / wing_root_chord
+    Ix = bird_mass*span_avg**2/12
+    Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
+    Iz = bird_mass*(wing_root_chord**2)/12
 
     return AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz
 
@@ -124,8 +129,10 @@ def forward_step(virtual_creature, dt=1.0):
     AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
 
     # Find angle of attack & V_inf
-    angle_of_attack = wa + r[1]
+    # angle_of_attack = globals.wrapRads(wa + r[2])
+    angle_of_attack = wa + r[2]
     V_inf = v[0] * np.cos(angle_of_attack) + v[1] * np.cos(angle_of_attack)
+    V_inf = 0 if V_inf < 0 else V_inf
 
     lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
                                  alpha=angle_of_attack,
@@ -143,19 +150,22 @@ def forward_step(virtual_creature, dt=1.0):
                                  rho_inf=rho_inf)
     
     # Calculate key forces
+    # NOTE: convert to matrices later
     lift = lift_aw + lift_hw
+    lift_x = - lift * np.sin(r[2])
+    lift_y = lift * np.cos(r[2])
     drag = drag_aw + drag_hw
-    weight = bird_mass * g
+    drag_x = -drag * np.cos(r[2])
+    drag_y = -drag * np.sin(r[2])
+    weight = - bird_mass * g
 
     # Stepper
-    p = p + dt*v
-
-    v_dot = np.array([0, 0, 0])
-    v_dot[1] = (lift - weight) / bird_mass
-    v_dot[0] = - drag / bird_mass
+    v_dot = np.array([0.0, 0.0, 0.0])
+    v_dot[1] = (lift_y + drag_y + weight) / bird_mass
+    v_dot[0] = (drag_x + lift_x) / bird_mass
     v = v + v_dot * dt
 
-    r = r + dt*omega
+    p = p + dt*v
 
     omega_dot = np.array([0, 0, 0])
     # Encounter an issue here where python int too large to convert to C long,
@@ -163,6 +173,13 @@ def forward_step(virtual_creature, dt=1.0):
     # is becoming too large
     omega_dot[2] = lift/Iz * (COG_position - COL_position)
     omega = omega + omega_dot*dt
+
+    r = r + dt*omega
+
+    # Wrap angles to [-pi, pi]
+    # r = globals.wrapRads(r)
+    # wa = globals.wrapRads(wa)
+
 
     # Finish by updating the state of the virtual creature
     virtual_creature.update_state(
