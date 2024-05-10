@@ -132,6 +132,7 @@ def forward_step(virtual_creature, dt=1.0):
     # angle_of_attack = globals.wrapRads(wa + r[2])
     angle_of_attack = wa + r[2]
     V_inf = v[0] * np.cos(angle_of_attack) + v[1] * np.cos(angle_of_attack)
+    V_inf = 0 if V_inf < 0 else V_inf
 
     lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
                                  alpha=angle_of_attack,
