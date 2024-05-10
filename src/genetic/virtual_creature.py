@@ -84,11 +84,16 @@ class VirtualCreature:
         """
         Returns the labels for the state vector
         """
+        
+        # +x is forward, +y is up, +z is right
+        # label rotations with roll, yaw, pitch
+        # everything is metres, seconds, radians
+        
         return [
-            "px", "py", "pz",
+            "px (+forward, -backward)", "py (+up, -down)", "pz (+right, -left)",
             "vx", "vy", "vz",
             "ax", "ay", "az",
-            "rx", "ry", "rz",
+            "rx (roll)", "ry (yaw)", "rz (pitch)",
             "ωx", "ωy", "ωz",
             "wing_angle"
         ]

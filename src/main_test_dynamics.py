@@ -17,6 +17,12 @@ if __name__ == "__main__":
     # Make a random creature
     creature = VirtualCreature.random_init()
 
+    # Plot what it looks like
+    visuals.render_virtual_creature(
+        f"{log_folder}/mesh.png",
+        creature
+    )
+
     # Can reset the creature's state
     creature.reset_state()
 
@@ -35,7 +41,7 @@ if __name__ == "__main__":
         
     # Plot the state trajectory
     visuals.plot_state_trajectory(
-        os.path.join(log_folder, "state_trajectory.png"),
+        f"{log_folder}/state_trajectory.png",
         state_trajectory,
         VirtualCreature.get_state_vector_labels()
     )
