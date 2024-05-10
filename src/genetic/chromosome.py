@@ -34,7 +34,7 @@ class Chromosome:
 
         # Check that each gene is within its feasible range
         for i, gene in enumerate(CHROMOSOME_DEFINITION):
-            assert gene.min_val <= vector[i] <= gene.max_val
+            assert gene.min_val <= vector[i] <= gene.max_val, f"Gene {gene.name} out of bounds {gene.min_val} <= {vector[i]} <= {gene.max_val}"
 
         # Assign the genes to named attributes
         for i, gene in enumerate(CHROMOSOME_DEFINITION):

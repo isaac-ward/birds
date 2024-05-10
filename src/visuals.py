@@ -150,72 +150,78 @@ def render_virtual_creature(filepath, virtual_creature):
 
     # Our convention is +x is forward, +y is up, +z is right
     # But mpl has +x is forward, +y is left, +z is up
-    # So do that transformation by rotating 90deg about x
-    def rot_mat_x(theta):
-        return np.array([
-            [1, 0, 0],
-            [0, np.cos(theta), -np.sin(theta)],
-            [0, np.sin(theta), np.cos(theta)]
-        ])
-    angle = np.pi / 2
-    R = rot_mat_x(angle)
-    vertices = [ R @ np.array(v) for v in vertices ]
-    # Correct vertical should be zero 
-    vertices = [ (v[0], v[1], 0) for v in vertices ]
+    # TODO need to do something about this
 
     # Render the mesh with trisurf
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_trisurf(
         [v[0] for v in vertices],
         [v[1] for v in vertices],
         [v[2] for v in vertices],
         triangles=faces,
-        cmap='viridis'
+        cmap='viridis',
+        alpha=0.5,
+        edgecolor='k'
     )
 
     # Annunciate the vertices with a 3d scatter plot
-    # with little x markers at each vertex
+    # with little markers at each vertex
     ax.scatter(
         [v[0] for v in vertices],
         [v[1] for v in vertices],
         [v[2] for v in vertices],
         color='black',
-        marker='x'
+        marker='.',
+        s=0.2,
     )    
 
     # Draw a downwards pointing vector at the CoG position
     COG_position = virtual_creature.chromosome.COG_position
+    cog_x = (1 - COG_position) * virtual_creature.chromosome.wing_root_chord
+    # Ensure that this has an arrow head
     ax.quiver(
-        COG_position, 0, 0,
-        0, 0, -1,
-        color='red'
+        # Start at the CoG position
+        cog_x, 0, 0,
+        # dXYZ components of the arrow
+        0, -0.1, 0,
+        color='red',
     )
+    # Scatter with an x
+    ax.scatter([cog_x], [0], [0], color='red', marker='x')
 
     # Edit the axes so that +x is forward, +y is up, +z is right
     ax.set_xlabel("+x forward")
-    # Trickery
-    ax.set_ylabel("+z right")
-    ax.set_zlabel("+y up")
+    ax.set_ylabel("+y up")
+    ax.set_zlabel("+z right")
 
     # Set axis limits so that everything is visible
     extents = [
         (min([v[0] for v in vertices]), max([v[0] for v in vertices])),
         (min([v[1] for v in vertices]), max([v[1] for v in vertices])),
-        (-1,1)
+        (min([v[2] for v in vertices]), max([v[2] for v in vertices]))
     ]
     ax.set_xlim3d(*extents[0])
     ax.set_xlim3d(*extents[1])
     ax.set_xlim3d(*extents[2]) 
 
-    # Set ticks only at zeros and extents
-    ax.set_xticks([0, *extents[0]])
-    ax.set_yticks([0, *extents[1]])
-    ax.set_zticks([0, *extents[2]])
+    # Set aspect ratoi
+    ax.set_box_aspect([1, 1, 5])
 
-    plt.show()
+    # Set ticks to show wingspan
+    ax.set_zticks([*extents[2]])
+    # Hide x and y axis ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # Set azimuth elevation and roll on plot
+    rot = 30
+    ax.view_init(azim=-90 - rot, elev=110, roll=-rot)
+
+    #plt.show()
 
     # Save the plot
+    plt.tight_layout()
     plt.savefig(filepath, dpi=600)
     plt.close()
 

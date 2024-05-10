@@ -32,6 +32,7 @@ if __name__ == "__main__":
     num_steps = 20
     state_trajectory = []
     for _ in tqdm(range(num_steps), desc="Running forward dynamics"):
+
         # Run the dynamics forward
         forward_step(creature, dt=0.01)
 
