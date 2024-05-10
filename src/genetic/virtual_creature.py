@@ -103,7 +103,13 @@ class VirtualCreature:
         Mutates the chromosome of the virtual creature
         with a given mutation rate
         """
+
+        # Create a new chromosome with Chromosome(...)
+        # and then return a new VirtualCreature with the new chromosome
+        # like return VirtualCreature(new_chromosome)
         # TODO 
+        # self.chromosome.cog_position
+        pass
 
     def crossover(self, other):
         """
@@ -111,13 +117,13 @@ class VirtualCreature:
         with another virtual creature
         """
         # TODO
+        # self.chromosome.wingspan
+        # other.chromosome.wingspan
 
-    def render(self):
-        """
-        Renders the virtual creature as an image for quick
-        visualization
-        """
-        # TODO: irw/aditi
+        # again return a new VirtualCreature with the new chromosome
+        # new_chromosome <- other.chromosome mixed with self.chromosome
+        # like return VirtualCreature(new_chromosome)
+        pass
 
     def __str__(self):
         """

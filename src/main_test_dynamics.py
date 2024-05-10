@@ -30,12 +30,14 @@ if __name__ == "__main__":
     print(creature)
 
     # Run the creature for a few steps
-    num_steps = 20
+    simulation_time_seconds = 10
+    dt = 0.01
+    num_steps = int(simulation_time_seconds / dt)
     state_trajectory = []
     for _ in tqdm(range(num_steps), desc="Running forward dynamics"):
 
         # Run the dynamics forward
-        forward_step(creature, dt=0.01)
+        forward_step(creature, dt=dt)
 
         # Get the state vector and log
         state_vector = creature.get_state_vector()
