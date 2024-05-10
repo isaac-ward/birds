@@ -4,8 +4,14 @@ from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
 from genetic.fitness import evaluate_fitness, select_fittest_individuals
 from dynamics import forward_step
+import visuals
+
+import utils
 
 if __name__ == "__main__":
+
+    # Set up a log folder
+    log_folder = utils.make_log_folder()
     
     # Make a random creature
     creature = VirtualCreature.random_init()
@@ -16,9 +22,19 @@ if __name__ == "__main__":
     print(creature)
 
     # Run the creature for a few steps
-    num_steps = 800
+    num_steps = 20
+    state_trajectory = []
     for _ in range(num_steps):
-        print(f"step {_}:\n")
-        print(creature)
-        forward_step(creature, 0.01)
-    print(creature)
+        # Run the dynamics forward
+        forward_step(creature, dt=0.01)
+
+        # Get the state vector and log
+        state_vector = creature.get_state_vector()
+        state_trajectory.append(state_vector)
+        
+    # Plot the state trajectory
+    visuals.plot_state_trajectory(
+        os.path.join(log_folder, "state_trajectory.png"),
+        state_trajectory,
+        VirtualCreature.get_state_vector_labels()
+    )

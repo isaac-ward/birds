@@ -66,6 +66,33 @@ class VirtualCreature:
             wing_angle=0.0873
         )
 
+    def get_state_vector(self):
+        """
+        Returns the state of the virtual creature as a vector
+        """
+        return np.concatenate([
+            self.position_xyz,
+            self.velocity_xyz,
+            self.acceleration_xyz,
+            self.rotation_xyz,
+            self.angular_velocity,
+            np.array([self.wing_angle])
+        ])
+
+    @staticmethod
+    def get_state_vector_labels():
+        """
+        Returns the labels for the state vector
+        """
+        return [
+            "px", "py", "pz",
+            "vx", "vy", "vz",
+            "ax", "ay", "az",
+            "rx", "ry", "rz",
+            "ωx", "ωy", "ωz",
+            "wing_angle"
+        ]
+
     def mutate(self, mutation_rate):
         """
         Mutates the chromosome of the virtual creature
@@ -99,7 +126,7 @@ class VirtualCreature:
         s += f"v  = {self.velocity_xyz}\n"
         s += f"a  = {self.acceleration_xyz}\n"
         s += f"r  = {self.rotation_xyz}\n"
-        s += f"r' = {self.angular_velocity}\n"
+        s += f"ω  = {self.angular_velocity}\n"
         s += f"wa = {self.wing_angle}\n"
         s += "\n"
         # Write out the chromosome
