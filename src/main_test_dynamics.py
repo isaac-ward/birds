@@ -9,6 +9,7 @@ if __name__ == "__main__":
     
     # Make a random creature
     creature = VirtualCreature.random_init()
+    creature = VirtualCreature()
 
     # Can reset the creature's state
     creature.reset_state()
