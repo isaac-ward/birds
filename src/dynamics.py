@@ -38,6 +38,10 @@ def get_airfoil_thickness(airfoil:str) -> float:
     }
     return airfoil_database[airfoil]
 
+def wrapTo2Pi(angle:float) -> float:
+    wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi
+    return wrapped_angle
+
 def get_wing_parameters(virtual_creature):
     # Get chromosome data
     wingspan, norm_wrist_position, wing_root_chord = virtual_creature.chromosome.wingspan, virtual_creature.chromosome.norm_wrist_position, virtual_creature.chromosome.wing_root_chord
@@ -76,7 +80,6 @@ def get_wing_parameters(virtual_creature):
     b1 = wingspan
     b2 = (1+norm_wrist_position)/2 * wingspan
     b3 = norm_wrist_position/2 * wingspan
-    t = (chord_thickness_aw+chord_thickness_hw)/2
     m1 = c1*b1/(c1*b1+c2*b2+c3*b3)*bird_mass
     m2 = c2*b2/(c1*b1+c2*b2+c3*b3)*bird_mass
     m3 = c3*b3/(c1*b1+c2*b2+c3*b3)*bird_mass
@@ -124,7 +127,7 @@ def forward_step(virtual_creature, dt=1.0):
     AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
 
     # Find angle of attack & V_inf
-    angle_of_attack = wa + r[1]
+    angle_of_attack = wrapTo2Pi(wa + r[2])
     V_inf = v[0] * np.cos(angle_of_attack) + v[1] * np.cos(angle_of_attack)
 
     lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
@@ -143,23 +146,33 @@ def forward_step(virtual_creature, dt=1.0):
                                  rho_inf=rho_inf)
     
     # Calculate key forces
+    # NOTE: convert to matrices later
     lift = lift_aw + lift_hw
+    lift_x = - lift * np.sin(r[2])
+    lift_y = lift * np.cos(r[2])
     drag = drag_aw + drag_hw
-    weight = bird_mass * g
+    drag_x = -drag * np.cos(r[2])
+    drag_y = -drag * np.sin(r[2])
+    weight = - bird_mass * g
 
     # Stepper
-    p = p + dt*v
-
-    v_dot = np.array([0, 0, 0])
-    v_dot[1] = (lift - weight) / bird_mass
-    v_dot[0] = - drag / bird_mass
+    v_dot = np.array([0.0, 0.0, 0.0])
+    v_dot[1] = (lift_y + drag_y + weight) / bird_mass
+    v_dot[0] = (drag_x + lift_x) / bird_mass
     v = v + v_dot * dt
 
-    r = r + dt*omega
+    p = p + dt*v
 
     omega_dot = np.array([0, 0, 0])
     omega_dot[2] = lift/Iz * (COG_position - COL_position)
     omega = omega + omega_dot*dt
+
+    r = r + dt*omega
+
+    # Wrap angles to [-pi, pi]
+    r = wrapTo2Pi(r)
+    wa = wrapTo2Pi(wa)
+
 
     # Finish by updating the state of the virtual creature
     virtual_creature.update_state(
