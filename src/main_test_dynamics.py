@@ -8,8 +8,8 @@ from dynamics import forward_step
 if __name__ == "__main__":
     
     # Make a random creature
-    creature = VirtualCreature.random_init()
-    creature = VirtualCreature()
+    # creature = VirtualCreature.random_init()
+    creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.24, 0.0, 0.0]))
 
     # Can reset the creature's state
     creature.reset_state()
