@@ -106,7 +106,7 @@ def forward_step(virtual_creature, dt=1.0):
     dt units are in seconds
     """
     
-    # +x is forward, +y is right, +z is up
+    # +x is forward, +y is up, +z is right
     p = virtual_creature.position_xyz
     v = virtual_creature.velocity_xyz
     a = virtual_creature.acceleration_xyz
@@ -158,6 +158,9 @@ def forward_step(virtual_creature, dt=1.0):
     r = r + dt*omega
 
     omega_dot = np.array([0, 0, 0])
+    # Encounter an issue here where python int too large to convert to C long,
+    # and it's because of the lift/Iz term. Iz is constant, but lift
+    # is becoming too large
     omega_dot[2] = lift/Iz * (COG_position - COL_position)
     omega = omega + omega_dot*dt
 

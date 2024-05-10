@@ -1,4 +1,5 @@
 import os 
+from tqdm import tqdm
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     # Run the creature for a few steps
     num_steps = 20
     state_trajectory = []
-    for _ in range(num_steps):
+    for _ in tqdm(range(num_steps), desc="Running forward dynamics"):
         # Run the dynamics forward
         forward_step(creature, dt=0.01)
 
