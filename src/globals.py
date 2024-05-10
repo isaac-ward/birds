@@ -11,7 +11,7 @@ CHROMOSOME_DEFINITION = [
     Gene("wing_root_chord", 0.0, 1.0),
     Gene("taper_armwing", 0.0, 1.0),
     Gene("taper_handwing", 0.0, 1.0),
-    Gene("COG_position", 0.0, 1.0),
+    Gene("norm_COG_position", 0.0, 1.0),
     Gene("airfoil_armwing", 0.0, 1.0), #NOTE: Change later
     Gene("airfoil_handwing", 0.0, 1.0) #NOTE: Change later
 ]

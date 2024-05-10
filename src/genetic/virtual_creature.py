@@ -63,7 +63,7 @@ class VirtualCreature:
             acceleration_xyz=np.zeros(3),
             rotation_xyz=np.zeros(3),
             angular_velocity=np.zeros(3),
-            wing_angle=0.0873
+            wing_angle=0
         )
 
     def get_state_vector(self):

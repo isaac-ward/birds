@@ -41,9 +41,10 @@ def get_airfoil_thickness(airfoil:str) -> float:
 def get_wing_parameters(virtual_creature):
     # Get chromosome data
     wingspan, norm_wrist_position, wing_root_chord = virtual_creature.chromosome.wingspan, virtual_creature.chromosome.norm_wrist_position, virtual_creature.chromosome.wing_root_chord
-    taper_armwing, taper_handwing, COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.COG_position
+    taper_armwing, taper_handwing, norm_COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.norm_COG_position
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
     bird_density = globals.BIRD_DENSITY
+    COG_position = norm_COG_position * wing_root_chord
 
     airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
@@ -58,8 +59,9 @@ def get_wing_parameters(virtual_creature):
 
     chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
     chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
-    chord_avg = 1/2 * (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
-    COL_position = wing_root_chord - 3/4 * chord_avg
+    chord_avg = (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
+    # COL_position = wing_root_chord - 3/4 * chord_avg
+    COL_position = 1/4 * wing_root_chord
 
     # Wing volume
     chord_thickness_aw = get_airfoil_thickness(airfoil_armwing)
@@ -97,7 +99,7 @@ def get_wing_parameters(virtual_creature):
 
     # Moment of Inertia (simplified)
     span_avg = (area_aw + area_hw) / wing_root_chord
-    Ix = bird_mass*span_avg**2/12
+    Ix = bird_mass*(span_avg**2)/12
     Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
     Iz = bird_mass*(wing_root_chord**2)/12
 
@@ -130,9 +132,9 @@ def forward_step(virtual_creature, dt=1.0):
 
     # Find angle of attack & V_inf
     # angle_of_attack = globals.wrapRads(wa + r[2])
-    angle_of_attack = wa + r[2]
-    V_inf = v[0] * np.cos(angle_of_attack) + v[1] * np.cos(angle_of_attack)
-    V_inf = 0 if V_inf < 0 else V_inf
+    velocity_angle = globals.wrapRads(np.arctan2(-v[1],v[0]))
+    angle_of_attack = wa + r[2] + velocity_angle
+    V_inf = np.linalg.norm(v[0:1])
 
     lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
                                  alpha=angle_of_attack,
@@ -152,11 +154,11 @@ def forward_step(virtual_creature, dt=1.0):
     # Calculate key forces
     # NOTE: convert to matrices later
     lift = lift_aw + lift_hw
-    lift_x = - lift * np.sin(r[2])
-    lift_y = lift * np.cos(r[2])
+    lift_x = - lift * np.sin(r[2] + wa)
+    lift_y = lift * np.cos(r[2] + wa)
     drag = drag_aw + drag_hw
-    drag_x = -drag * np.cos(r[2])
-    drag_y = -drag * np.sin(r[2])
+    drag_x = -drag * np.cos(r[2] + wa)
+    drag_y = -drag * np.sin(r[2] + wa)
     weight = - bird_mass * g
 
     # Stepper
@@ -185,7 +187,7 @@ def forward_step(virtual_creature, dt=1.0):
     virtual_creature.update_state(
         position_xyz=p,
         velocity_xyz=v,
-        acceleration_xyz=a,
+        acceleration_xyz=v_dot,
         rotation_xyz=r,
         angular_velocity=omega,
         wing_angle=wa,

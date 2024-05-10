@@ -78,7 +78,8 @@ def render_virtual_creature(filepath, virtual_creature):
         wing_root_chord = chromosome.wing_root_chord
         taper_armwing = chromosome.taper_armwing
         taper_handwing = chromosome.taper_handwing
-        COG_position = chromosome.COG_position
+        norm_COG_position = chromosome.norm_COG_position
+        COG_position = norm_COG_position * norm_wrist_position
 
         # Will represent the bird as a series of vertices and faces
         # (must be triangles)
@@ -177,7 +178,8 @@ def render_virtual_creature(filepath, virtual_creature):
     )    
 
     # Draw a downwards pointing vector at the CoG position
-    COG_position = virtual_creature.chromosome.COG_position
+    norm_COG_position = virtual_creature.chromosome.norm_COG_position
+    COG_position = norm_COG_position * virtual_creature.chromosome.wing_root_chord
     cog_x = (1 - COG_position) * virtual_creature.chromosome.wing_root_chord
     # Ensure that this has an arrow head
     ax.quiver(
