@@ -99,7 +99,7 @@ def get_wing_parameters(virtual_creature):
 
     # Moment of Inertia (simplified)
     span_avg = (area_aw + area_hw) / wing_root_chord
-    Ix = bird_mass*(span_avg**2)/12
+    Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
     Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
     Iz = bird_mass*(wing_root_chord**2)/12
 
