@@ -1,4 +1,5 @@
 import numpy as np 
+import random
 
 from genetic.chromosome import Chromosome
 
@@ -102,28 +103,67 @@ class VirtualCreature:
         """
         Mutates the chromosome of the virtual creature
         with a given mutation rate
-        """
-
-        # Create a new chromosome with Chromosome(...)
-        # and then return a new VirtualCreature with the new chromosome
-        # like return VirtualCreature(new_chromosome)
-        # TODO 
-        # self.chromosome.cog_position
-        pass
+        """      
+        
+        #still in progress not able to access individual genes  
+        #Gaussian mutation by adding zero mean Gaussian Noise (Alg 9.9)
+        sigma = mutation_rate
+        mutated_wingspan = np.clip(self.chromosome.wingspan + np.random.normal(0, sigma), 0.0, 10.0)
+        mutated_norm_wrist_position = np.clip(self.chromosome.norm_wrist_position + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_wing_root_chord = np.clip(self.chromosome.wing_root_chord + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_taper_armwing = np.clip(self.chromosome.taper_armwing + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_taper_handwing = np.clip(self.chromosome.taper_handwing + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_norm_COG_position = np.clip(self.chromosome.norm_COG_position + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_airfoil_armwing = np.clip(self.chromosome.airfoil_armwing + np.random.normal(0, sigma), 0.0, 1.0)
+        mutated_airfoil_handwing = np.clip(self.chromosome.airfoil_handwing + np.random.normal(0, sigma), 0.0, 1.0)
+        new_chromosome = Chromosome(
+            wingspan=mutated_wingspan,
+            norm_wrist_position=mutated_norm_wrist_position,
+            wing_root_chord=mutated_wing_root_chord,
+            taper_armwing=mutated_taper_armwing,
+            taper_handwing=mutated_taper_handwing,
+            norm_COG_position=mutated_norm_COG_position,
+            airfoil_armwing=mutated_airfoil_armwing,
+            airfoil_handwing=mutated_airfoil_handwing,
+         )
+        # gene_definitions = self.chromosome.get_gene_definitions()
+        # new_vector = np.clip(
+        #     self.chromosome.vector + np.random.normal(0, sigma, self.chromosome.vector.shape),
+        #     [gene.min_val for gene in CHROMOSOME_DEFINITION],
+        #     [gene.max_val for gene in CHROMOSOME_DEFINITION]
+        # )
+        # new_chromosome = Chromosome(new_vector)
+        return VirtualCreature(new_chromosome)
+        #pass
 
     def crossover(self, other):
         """
         Crosses over the chromosome of the virtual creature
         with another virtual creature
         """
-        # TODO
-        # self.chromosome.wingspan
-        # other.chromosome.wingspan
+       
+        # from textbook single point cross over and will choose a random index to split and stitch the chromosome 
+        crossover_index = random.randint(0, 5) # There are 6 traits, indexed 0 to 5
+        # new_chromosome = Chromosome(
+        wingspan=self.chromosome.wingspan if crossover_index >= 0 else other.chromosome.wingspan,
+        norm_wrist_position=self.chromosome.norm_wrist_position if crossover_index >= 1 else other.chromosome.norm_wrist_position,
+        wing_root_chord=self.chromosome.wing_root_chord if crossover_index >= 2 else other.chromosome.wing_root_chord,
+        taper_armwing=self.chromosome.taper_armwing if crossover_index >= 3 else other.chromosome.taper_armwing,
+        taper_handwing=self.chromosome.taper_handwing if crossover_index >= 4 else other.chromosome.taper_handwing,
+        norm_COG_position=self.chromosome.norm_COG_position if crossover_index >= 5 else other.chromosome.norm_COG_position,
+        airfoil_armwing=self.chromosome.airfoil_armwing if crossover_index >= 3 else other.chromosome.airfoil_armwing,
+        airfoil_handwing=self.chromosome.airfoil_handwing if crossover_index >= 4 else other.chromosome.airfoil_handwing,
+        # )
+        
+        # crossover_point = random.randint(1, len(self.chromosome.vector) - 1)
+        # new_vector = np.concatenate((
+        #     self.chromosome.vector[:crossover_point],
+        #     other.chromosome.vector[crossover_point:]
+        # ))
+        # new_chromosome = Chromosome(new_vector)
+        return VirtualCreature(wingspan,norm_wrist_position,wing_root_chord,taper_armwing,taper_handwing,norm_COG_position,airfoil_armwing,airfoil_handwing)
 
-        # again return a new VirtualCreature with the new chromosome
-        # new_chromosome <- other.chromosome mixed with self.chromosome
-        # like return VirtualCreature(new_chromosome)
-        pass
+        
 
     def __str__(self):
         """
