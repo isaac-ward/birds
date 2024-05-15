@@ -1,5 +1,5 @@
 import numpy as np 
-
+import random
 class Gene:
     """
     Helper class to store a named gene and explicitly define
@@ -59,3 +59,14 @@ class Chromosome:
         for gene in CHROMOSOME_DEFINITION:
             s += f"{gene.name} = {getattr(self, gene.name)}\n"
         return s
+    def crossover(self, other):
+        # Single point crossover
+        crossover_point = random.randint(0, len(CHROMOSOME_DEFINITION) - 1)
+        new_vector = [getattr(self, gene.name) if i <= crossover_point else getattr(other, gene.name) for i, gene in enumerate(CHROMOSOME_DEFINITION)]
+        return Chromosome(np.array(new_vector))
+    def mutate(self, sigma):
+        # Mutate each gene attribute using Gaussian noise
+        for gene in CHROMOSOME_DEFINITION:
+            mutated_value = np.clip(getattr(self, gene.name) + np.random.normal(0, sigma), gene.min_val, gene.max_val)
+            setattr(self, gene.name, mutated_value)
+        return self
