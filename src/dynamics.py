@@ -57,11 +57,14 @@ def get_wing_parameters(virtual_creature):
     AR_aw = span_aw / area_aw
     AR_hw = span_hw / area_hw
 
+    # Center of lift
     chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
     chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
     chord_avg = (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
-    # COL_position = wing_root_chord - 3/4 * chord_avg
-    COL_position = 1/4 * wing_root_chord
+    # x_COL_position = wing_root_chord - 3/4 * chord_avg
+    x_COL_position = 1/4 * wing_root_chord
+
+    z_COL_position = wingspan/4
 
     # Wing volume
     chord_thickness_aw = get_airfoil_thickness(airfoil_armwing)
@@ -103,7 +106,7 @@ def get_wing_parameters(virtual_creature):
     Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
     Iz = bird_mass*(wing_root_chord**2)/12
 
-    return AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz
+    return AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, Ix, Iy, Iz
 
 def forward_step(virtual_creature, dt=1.0):
     """
@@ -128,7 +131,7 @@ def forward_step(virtual_creature, dt=1.0):
     airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Get wing parameters
-    AR_aw, AR_hw, area_aw, area_hw, COG_position, COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
+    AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
 
     # Find angle of attack & V_inf
     # angle_of_attack = globals.wrapRads(wa + r[2])
@@ -173,7 +176,7 @@ def forward_step(virtual_creature, dt=1.0):
     # Encounter an issue here where python int too large to convert to C long,
     # and it's because of the lift/Iz term. Iz is constant, but lift
     # is becoming too large
-    omega_dot[2] = lift/Iz * (COG_position - COL_position)
+    omega_dot[2] = lift/Iz * (COG_position - x_COL_position)
     omega = omega + omega_dot*dt
 
     r = r + dt*omega
