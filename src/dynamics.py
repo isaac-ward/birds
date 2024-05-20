@@ -103,10 +103,14 @@ def get_wing_parameters(virtual_creature):
     # Moment of Inertia (simplified)
     span_avg = (area_aw + area_hw) / wing_root_chord
     Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
-    Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
-    Iz = bird_mass*(wing_root_chord**2)/12
+    Iz = bird_mass*(span_avg**2 + wing_root_chord**2)/12
+    Iy = bird_mass*(wing_root_chord**2)/12
+    I = np.diag([Ix, Iy, Iz])
 
-    return AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, Ix, Iy, Iz
+    return AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, I
+
+
+
 
 def forward_step(virtual_creature, dt=1.0):
     """
@@ -117,11 +121,13 @@ def forward_step(virtual_creature, dt=1.0):
     """
     
     # +x is forward, +y is up, +z is right
-    p = virtual_creature.position_xyz
-    v = virtual_creature.velocity_xyz
-    a = virtual_creature.acceleration_xyz
-    r = virtual_creature.rotation_xyz
-    omega = virtual_creature.angular_velocity
+    pos_world = virtual_creature.position_xyz
+    vel_world = virtual_creature.velocity_xyz
+    acc_world = virtual_creature.acceleration_xyz
+    rot_world = virtual_creature.rotation_xyz
+    omega_world = virtual_creature.angular_velocity
+    uvw = virtual_creature.velocity_bird_frame
+    pqr = virtual_creature.angular_velocity_bird_frame
     wa = virtual_creature.wing_angle
 
     # Pull chromosome data
@@ -131,7 +137,7 @@ def forward_step(virtual_creature, dt=1.0):
     airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Get wing parameters
-    AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, Ix, Iy, Iz = get_wing_parameters(virtual_creature)
+    AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, I = get_wing_parameters(virtual_creature)
 
     # Find angle of attack & V_inf
     # angle_of_attack = globals.wrapRads(wa + r[2])
@@ -154,23 +160,15 @@ def forward_step(virtual_creature, dt=1.0):
                                  V_inf=V_inf,
                                  rho_inf=rho_inf)
     
-    # Calculate key forces
-    # NOTE: convert to matrices later
-    lift = lift_aw + lift_hw
-    lift_x = - lift * np.sin(r[2] + wa)
-    lift_y = lift * np.cos(r[2] + wa)
-    drag = drag_aw + drag_hw
-    drag_x = -drag * np.cos(r[2] + wa)
-    drag_y = -drag * np.sin(r[2] + wa)
-    weight = - bird_mass * g
+    # Find forces in bird values
+    uvw_dot = -1/bird_mass * np.cross(pqr, uvw)
+    pqr_dot = np.inv(I)
 
     # Stepper
     v_dot = np.array([0.0, 0.0, 0.0])
-    v_dot[1] = (lift_y + drag_y + weight) / bird_mass
-    v_dot[0] = (drag_x + lift_x) / bird_mass
-    v = v + v_dot * dt
+    vel_world = vel_world + v_dot * dt
 
-    p = p + dt*v
+    pos_world = pos_world + dt*vel_world
 
     omega_dot = np.array([0, 0, 0])
     # Encounter an issue here where python int too large to convert to C long,
