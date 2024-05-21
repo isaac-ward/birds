@@ -39,8 +39,9 @@ class VirtualCreature:
         velocity_xyz,
         acceleration_xyz,
         rotation_xyz,
-        wing_angle,
-        angular_velocity
+        angular_velocity,
+        wing_angle_left,
+        wing_angle_right
     ):
         """
         Updates the state of the virtual creature by one step
@@ -51,7 +52,8 @@ class VirtualCreature:
         self.acceleration_xyz = acceleration_xyz # m/s^2
         self.rotation_xyz = rotation_xyz         # rad
         self.angular_velocity = angular_velocity # rad/s
-        self.wing_angle = wing_angle             # rad (angle between wing and bird body)
+        self.wing_angle_left = wing_angle_left   # rad (angle between left wing and bird body)
+        self.wing_angle_right = wing_angle_right # rad (angle between right wing and bird body)
     
     def reset_state(self):
         """
@@ -63,7 +65,8 @@ class VirtualCreature:
             acceleration_xyz=np.zeros(3),
             rotation_xyz=np.zeros(3),
             angular_velocity=np.zeros(3),
-            wing_angle=0
+            wing_angle_left=0,
+            wing_angle_right=0
         )
 
     def get_state_vector(self):
@@ -76,7 +79,8 @@ class VirtualCreature:
             self.acceleration_xyz,
             self.rotation_xyz,
             self.angular_velocity,
-            np.array([self.wing_angle])
+            np.array([self.wing_angle_left]),
+            np.array([self.wing_angle_right])
         ])
 
     @staticmethod
@@ -138,7 +142,8 @@ class VirtualCreature:
         s += f"a  = {self.acceleration_xyz}\n"
         s += f"r  = {self.rotation_xyz}\n"
         s += f"ω  = {self.angular_velocity}\n"
-        s += f"wa = {self.wing_angle}\n"
+        s += f"wa = {self.wing_angle_left}\n"
+        s += f"wa = {self.wing_angle_right}\n"
         s += "\n"
         # Write out the chromosome
         s += "chromosome:\n"
