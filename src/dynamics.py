@@ -141,28 +141,43 @@ def forward_step(virtual_creature, dt=1.0):
 
     # Find angle of attack & V_inf
     # angle_of_attack = globals.wrapRads(wa + r[2])
-    velocity_angle = globals.wrapRads(np.arctan2(-v[1],v[0]))
-    angle_of_attack = wa + r[2] + velocity_angle
-    V_inf = np.linalg.norm(v[0:1])
+    V_inf = np.linalg.norm(vel_world)
+    alpha = wa + np.arctan2(vel_world[2],vel_world[0])
+    beta = np.arcsin(vel_world[1],V_inf)
 
-    lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
-                                 alpha=angle_of_attack,
-                                 AR=AR_aw,
-                                 S=area_aw,
-                                 V_inf=V_inf,
-                                 rho_inf=rho_inf
-                                 )
+    # TODO: Rewrite get_aero_data to process 2 different wings and incorporate 3D aerodynamics
+    # lift_aw, drag_aw = get_aero_data(airfoil=airfoil_armwing,
+    #                              alpha=alpha,
+    #                              AR=AR_aw,
+    #                              S=area_aw,
+    #                              V_inf=V_inf,
+    #                              rho_inf=rho_inf
+    #                              )
     
-    lift_hw, drag_hw = get_aero_data(airfoil=airfoil_handwing,
-                                 alpha=angle_of_attack,
-                                 AR=AR_hw,
-                                 S=area_hw,
-                                 V_inf=V_inf,
-                                 rho_inf=rho_inf)
+    # lift_hw, drag_hw = get_aero_data(airfoil=airfoil_handwing,
+    #                              alpha=alpha,
+    #                              AR=AR_hw,
+    #                              S=area_hw,
+    #                              V_inf=V_inf,
+    #                              rho_inf=rho_inf)
+
+    # Find total lift/drag
+    lift = 0
+    drag = 0
+
+    F_x = lift*np.sin(alpha) - drag*np.cos(beta)*np.cos(alpha)
+    F_y = drag*np.sin(beta)
+    F_z = -lift*np.cos(alpha) - drag*np.cos(beta)*np.sin(alpha)
+    F_vector = np.array([[F_x, F_y, F_z]]).T
+
+    M_x = 10
+    M_y = 10
+    M_z = 10
+    M_vector = np.array([[M_x, M_y, M_z]])
     
     # Find forces in bird values
-    uvw_dot = -1/bird_mass * np.cross(pqr, uvw)
-    pqr_dot = np.inv(I)
+    uvw_dot = -1/bird_mass * np.cross(pqr, uvw) + F_vector
+    pqr_dot = np.matmul(np.inv(I),(-(np.cross(pqr, np.matmul(I, pqr))) + M_vector))
 
     # Stepper
     v_dot = np.array([0.0, 0.0, 0.0])
