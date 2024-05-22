@@ -39,9 +39,10 @@ class VirtualCreature:
         position_xyz,
         velocity_xyz,
         acceleration_xyz,
-        rotation_xyz,
-        wing_angle,
-        angular_velocity
+        quaternions,
+        angular_velocity,
+        wing_angle_left,
+        wing_angle_right
     ):
         """
         Updates the state of the virtual creature by one step
@@ -50,9 +51,10 @@ class VirtualCreature:
         self.position_xyz = position_xyz         # m
         self.velocity_xyz = velocity_xyz         # m/s
         self.acceleration_xyz = acceleration_xyz # m/s^2
-        self.rotation_xyz = rotation_xyz         # rad
-        self.angular_velocity = angular_velocity # rad/s
-        self.wing_angle = wing_angle             # rad (angle between wing and bird body)
+        self.quaternions = quaternions           # scalar is last term [q1, q2, q3, q0]
+        self.angular_velocity = angular_velocity # rad/s (pqr in bird frame)
+        self.wing_angle_left = wing_angle_left   # rad (angle between left wing and bird body)
+        self.wing_angle_right = wing_angle_right # rad (angle between right wing and bird body)
     
     def reset_state(self):
         """
@@ -60,11 +62,12 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.array([10, 0, 0]),
+            velocity_xyz=np.array([10.0, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
-            rotation_xyz=np.zeros(3),
+            quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),
-            wing_angle=0
+            wing_angle_left=0.035,
+            wing_angle_right=0.0175
         )
 
     def get_state_vector(self):
@@ -75,9 +78,10 @@ class VirtualCreature:
             self.position_xyz,
             self.velocity_xyz,
             self.acceleration_xyz,
-            self.rotation_xyz,
+            self.quaternions,
             self.angular_velocity,
-            np.array([self.wing_angle])
+            np.array([self.wing_angle_left]),
+            np.array([self.wing_angle_right])
         ])
 
     @staticmethod
@@ -129,9 +133,10 @@ class VirtualCreature:
         s += f"p  = {self.position_xyz}\n"
         s += f"v  = {self.velocity_xyz}\n"
         s += f"a  = {self.acceleration_xyz}\n"
-        s += f"r  = {self.rotation_xyz}\n"
+        s += f"r  = {self.quaternions}\n"
         s += f"ω  = {self.angular_velocity}\n"
-        s += f"wa = {self.wing_angle}\n"
+        s += f"wa = {self.wing_angle_left}\n"
+        s += f"wa = {self.wing_angle_right}\n"
         s += "\n"
         # Write out the chromosome
         s += "chromosome:\n"

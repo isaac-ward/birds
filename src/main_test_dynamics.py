@@ -20,10 +20,10 @@ if __name__ == "__main__":
     creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]))
 
     # Plot what it looks like at the start
-    visuals.render_3d_frame(
-        f"{log_folder}/mesh.png",
-        creature
-    )
+    # visuals.render_3d_frame(
+    #     f"{log_folder}/mesh.png",
+    #     creature
+    # )
 
     # Can reset the creature's state
     creature.reset_state()
@@ -33,10 +33,10 @@ if __name__ == "__main__":
     # Run the creature for some time
     # Simulation parameters
     simulation_time_seconds = 2.5
-    dt = 0.01
+    dt = 0.05
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
-    render_video = True
+    render_video = False
     fps = 25
     # Note the state trajectory
     state_trajectory = []
