@@ -74,32 +74,6 @@ def get_wing_parameters(virtual_creature):
     bird_volume = wing_volume_aw + wing_volume_hw
     bird_mass = bird_volume * bird_density
 
-    # # Moment of inertia
-    # c1 = taper_armwing * taper_handwing * wing_root_chord
-    # c2 = (1-taper_handwing) * taper_armwing * wing_root_chord
-    # c3 = (1-taper_armwing) * wing_root_chord
-    # b1 = wingspan
-    # b2 = (1+norm_wrist_position)/2 * wingspan
-    # b3 = norm_wrist_position/2 * wingspan
-    # m1 = c1*b1/(c1*b1+c2*b2+c3*b3)*bird_mass
-    # m2 = c2*b2/(c1*b1+c2*b2+c3*b3)*bird_mass
-    # m3 = c3*b3/(c1*b1+c2*b2+c3*b3)*bird_mass
-    # x_COG1 = c3 + c2 + c1/2
-    # x_COG2 = c3 + c2/2
-    # x_COG3 = c3/2
-    # Ix_COG1 = m1*b1**2/12
-    # Iy1 = m1*(b1**2 + c1**2)/12
-    # Iz1 = m1*c1**2/12
-    # Ix_COG2 = m2*b2**2/12
-    # Iy2 = m2*(b2**2 + c2**2)/12
-    # Iz2 = m2*c2**2/12
-    # Ix_COG3 = m3*b3**2/12
-    # Iy3 = m3*(b3**2 + c3**2)/12
-    # Iz3 = m3*c3**2/12
-    # Ix = Ix_COG1 + m1*(COG_position-x_COG1)**2 + Ix_COG2 + m2*(COG_position-x_COG2)**2 + Ix_COG3 + m3*(COG_position-x_COG3)**2
-    # Iy = Iy1 + Iy2 + Iy3
-    # Iz = Iz1 + Iz2 + Iz3
-
     # Moment of Inertia (simplified)
     span_avg = (area_aw + area_hw) / wing_root_chord
     Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
@@ -112,7 +86,7 @@ def get_wing_parameters(virtual_creature):
 def get_bird2world(phi, theta, psi):
     R1 = np.array([[1, 0, 0],
                    [0, np.cos(phi), np.sin(phi)],
-                   [0, np.sin(phi), np.cos(phi)]])
+                   [0, -np.sin(phi), np.cos(phi)]])
     R2 = np.array([[np.cos(theta), 0, -np.sin(theta)],
                    [0, 1, 0],
                    [np.sin(theta), 0, np.cos(theta)]])
@@ -173,31 +147,31 @@ def forward_step(virtual_creature, dt=1.0):
 
     # Get aeroydenmic forces
     lift_aw_left, drag_aw_left = get_aero_data(airfoil=airfoil_armwing,
-                                               alpha=alpha_left,
-                                               AR=AR_aw,
-                                               S=area_aw/2,
-                                               V_inf=V_inf,
-                                               rho_inf=rho_inf
-                                               )
+                                            alpha=alpha_left,
+                                            AR=AR_aw,
+                                            S=area_aw/2,
+                                            V_inf=V_inf,
+                                            rho_inf=rho_inf
+                                            )
     lift_aw_right, drag_aw_right = get_aero_data(airfoil=airfoil_armwing,
-                                                 alpha=alpha_right,
-                                                 AR=AR_aw,
-                                                 S=area_aw/2,
-                                                 V_inf=V_inf,
-                                                 rho_inf=rho_inf
-                                                 )
+                                                alpha=alpha_right,
+                                                AR=AR_aw,
+                                                S=area_aw/2,
+                                                V_inf=V_inf,
+                                                rho_inf=rho_inf
+                                                )
     lift_hw_left, drag_hw_left = get_aero_data(airfoil=airfoil_handwing,
-                                               alpha=alpha_left,
-                                               AR=AR_hw,
-                                               S=area_hw/2,
-                                               V_inf=V_inf,
-                                               rho_inf=rho_inf)
+                                            alpha=alpha_left,
+                                            AR=AR_hw,
+                                            S=area_hw/2,
+                                            V_inf=V_inf,
+                                            rho_inf=rho_inf)
     lift_hw_right, drag_hw_right = get_aero_data(airfoil=airfoil_handwing,
-                                                 alpha=alpha_right,
-                                                 AR=AR_hw,
-                                                 S=area_hw/2,
-                                                 V_inf=V_inf,
-                                                 rho_inf=rho_inf)
+                                                alpha=alpha_right,
+                                                AR=AR_hw,
+                                                S=area_hw/2,
+                                                V_inf=V_inf,
+                                                rho_inf=rho_inf)
 
     # Find forces in bird frame
     lift_left = lift_aw_left + lift_hw_left
@@ -205,8 +179,8 @@ def forward_step(virtual_creature, dt=1.0):
     drag_left = drag_aw_left + drag_hw_left
     drag_right = drag_aw_right + drag_hw_right
 
-    F_x_left = lift_left*np.sin(alpha_left) - drag_left*np.cos(beta)*np.sin(alpha_left)
-    F_x_right = lift_right*np.sin(alpha_right) - drag_right*np.cos(beta)*np.sin(alpha_right)
+    F_x_left = lift_left*np.sin(alpha_left) - drag_left*np.cos(beta)*np.cos(alpha_left)
+    F_x_right = lift_right*np.sin(alpha_right) - drag_right*np.cos(beta)*np.cos(alpha_right)
     F_x = F_x_left + F_x_right
     F_y = (drag_left+drag_right) * np.sin(beta)
     F_z_left = -lift_left*np.cos(alpha_left) - drag_left*np.cos(beta)*np.sin(alpha_left)
@@ -220,11 +194,11 @@ def forward_step(virtual_creature, dt=1.0):
     M_z = (F_x_left - F_x_right) * z_COL_position
     M_vector = np.array([M_x, M_y, M_z])
     g_vector = globals.GRAVITY * np.array([-np.sin(theta),
-                                           np.cos(theta)*np.sin(phi),
-                                           np.cos(theta)*np.cos(phi)])
+                                        np.cos(theta)*np.sin(phi),
+                                        np.cos(theta)*np.cos(phi)])
     
     # Find state in bird frame
-    uvw_dot = -1/bird_mass * np.cross(pqr, uvw) + F_vector + g_vector
+    uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
     pqr_dot = np.linalg.inv(I_mat) @ (-(np.cross(pqr, (I_mat@pqr))) + M_vector).T
 
     # Update state in bird frame

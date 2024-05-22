@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # Run the creature for some time
     # Simulation parameters
     simulation_time_seconds = 2.5
-    dt = 0.01
+    dt = 0.05
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
     render_video = True
