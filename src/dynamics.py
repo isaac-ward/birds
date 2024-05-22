@@ -83,21 +83,11 @@ def get_wing_parameters(virtual_creature):
 
     return AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, I_mat
 
-def get_bird2world(phi, theta, psi):
-    R1 = np.array([[1, 0, 0],
-                   [0, np.cos(phi), np.sin(phi)],
-                   [0, -np.sin(phi), np.cos(phi)]])
-    R2 = np.array([[np.cos(theta), 0, -np.sin(theta)],
-                   [0, 1, 0],
-                   [np.sin(theta), 0, np.cos(theta)]])
-    R3 = np.array([[np.cos(psi), np.sin(psi), 0],
-                   [-np.sin(psi), np.cos(psi), 0],
-                   [0, 0, 1]])
-    R4 = np.array([[1, 0, 0],
-                   [0, 1, 0],
-                   [0, 0, -1]])
-    R_bird2world = R1 @ R2 @ R3 @ R4
-
+def get_bird2world(quats):
+    q1, q2, q3, q0 = quats
+    R_bird2world = np.array([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q0*q2 + q1*q3)],
+                             [2*(q1*q2 + q0*q3), q0**2 - q1**2 + q2**2 - q3**2, 2*(q2*q3 - q0*q1)],
+                             [2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
     return R_bird2world
 
 
@@ -113,22 +103,15 @@ def forward_step(virtual_creature, dt=1.0):
     pos_world = virtual_creature.position_xyz
     vel_world = virtual_creature.velocity_xyz
     acc_world = virtual_creature.acceleration_xyz
-    rot_world = virtual_creature.rotation_xyz
-    omega_world = virtual_creature.angular_velocity
+    quats = virtual_creature.quaternions
+    pqr = virtual_creature.angular_velocity
     wa_left = virtual_creature.wing_angle_left
     wa_right = virtual_creature.wing_angle_right
 
-    phi, theta, psi = rot_world
-
     # Convert frome bird frame to world frame
-    R_bird2world = get_bird2world(phi, theta, psi)
+    R_bird2world = get_bird2world(quats)
     
     uvw = R_bird2world.T @ vel_world
-
-    R_pqr2euler = np.array([[1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
-                            [0, np.cos(phi), -np.sin(phi)],
-                            [0, np.sin(phi)/np.cos(theta), np.cos(phi)/np.cos(theta)]])
-    pqr = R_pqr2euler.T @ omega_world
 
     # Pull chromosome data
     airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
@@ -193,9 +176,7 @@ def forward_step(virtual_creature, dt=1.0):
     M_y = (-F_z) * (COG_position - x_COL_position)
     M_z = (F_x_left - F_x_right) * z_COL_position
     M_vector = np.array([M_x, M_y, M_z])
-    g_vector = globals.GRAVITY * np.array([-np.sin(theta),
-                                        np.cos(theta)*np.sin(phi),
-                                        np.cos(theta)*np.cos(phi)])
+    g_vector = R_bird2world.T @ np.array([0, 0, g])
     
     # Find state in bird frame
     uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
@@ -209,23 +190,26 @@ def forward_step(virtual_creature, dt=1.0):
     vel_world = R_bird2world @ uvw
     acc_world = R_bird2world @ uvw_dot
 
-    # NOTE: Watch out for singularity
-    omega_world = R_pqr2euler @ pqr
+    # Update quaternions
+    q1, q2, q3, q0 = quats
+    R_pqr2quats = np.array([[q0, -q3, q2],
+                           [q3, q0, -q1],
+                           [-q2, q1, q0],
+                           [-q1, -q2, -q3]])
+    quats_dot = R_pqr2quats @ pqr
 
     # Update world position/angles
     pos_world += dt*vel_world
-    rot_world += dt*omega_world
-
-    for i in range(rot_world.size):
-        rot_world[i] = globals.wrapRads(rot_world[i])
+    quats += dt*quats_dot
+    quats *= 1/np.linalg.norm(quats)
 
     # Finish by updating the state of the virtual creature
     virtual_creature.update_state(
         position_xyz=pos_world,
         velocity_xyz=vel_world,
         acceleration_xyz=acc_world,
-        rotation_xyz=rot_world,
-        angular_velocity=omega_world,
+        quaternions=quats,
+        angular_velocity=pqr,
         wing_angle_left=wa_left,
         wing_angle_right=wa_right
     )
