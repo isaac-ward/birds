@@ -17,13 +17,14 @@ if __name__ == "__main__":
     
     # Make a creature
     # creature = VirtualCreature.random_init()
-    creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]))
+    creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.25, 0.0, 0.0]))
 
     # Plot what it looks like at the start
-    # visuals.render_3d_frame(
-    #     f"{log_folder}/mesh.png",
-    #     creature
-    # )
+    if True:
+        visuals.render_3d_frame(
+            f"{log_folder}/mesh.png",
+            creature
+        )
 
     # Can reset the creature's state
     creature.reset_state()
@@ -36,8 +37,10 @@ if __name__ == "__main__":
     dt = 0.05
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
-    render_video = False
-    fps = 25
+    render_video = True
+    # Set FPS so that we get realtime playback
+    playback_speed = 1.0
+    fps = 1 / (dt * playback_speed)
     # Note the state trajectory
     state_trajectory = []
     for i in tqdm(range(num_steps), desc="Running forward dynamics"):
@@ -54,7 +57,7 @@ if __name__ == "__main__":
             visuals.render_3d_frame(
                 f"{log_folder}/frames/{i}.png",
                 creature,
-                extents=[(-5,20), (-5,5), (-5,5)],
+                extents=[(-5,20), (-8,8), (-5,15)],
                 past_3d_positions=state_trajectory,
                 current_time_s=i*dt,
                 total_time_s=simulation_time_seconds
