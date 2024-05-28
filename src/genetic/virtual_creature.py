@@ -1,4 +1,5 @@
 import numpy as np 
+import globals
 
 from genetic.chromosome import Chromosome
 
@@ -22,8 +23,7 @@ class VirtualCreature:
         self.reset_state()
 
         # TODO: Kusal please feel free to add other kinematic parameters
-        # here (note that these are not genes! they are the state of the
-        # creature in the world, not the parameters that define the creature)
+        self.get_mass_parameters()
 
     @classmethod
     def random_init(cls):
@@ -78,6 +78,47 @@ class VirtualCreature:
             self.angular_velocity,
             np.array([self.wing_angle])
         ])
+    
+    def get_mass_parameters(self):
+        # Get chromosome data
+        wingspan, norm_wrist_position, wing_root_chord = self.chromosome.wingspan, self.chromosome.norm_wrist_position, self.chromosome.wing_root_chord
+        taper_armwing, taper_handwing, norm_COG_position = self.chromosome.taper_armwing, self.chromosome.taper_handwing, self.chromosome.norm_COG_position
+        airfoil_armwing, airfoil_handwing = self.chromosome.airfoil_armwing, self.chromosome.airfoil_handwing
+        bird_density = globals.BIRD_DENSITY
+        COG_position = norm_COG_position * wing_root_chord
+
+        airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
+
+        # Wing characteristics
+        span_aw = wingspan * norm_wrist_position
+        span_hw = wingspan - span_aw
+        area = lambda b, cr, gamma: (1+gamma)/2*cr*b
+        area_aw = area(span_aw, wing_root_chord, taper_armwing)
+        area_hw = area(span_hw, wing_root_chord*taper_armwing, taper_handwing)
+        AR_aw = span_aw / area_aw
+        AR_hw = span_hw / area_hw
+
+        chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
+        chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
+        COL_position = 1/4 * wing_root_chord
+
+        # Wing volume
+        chord_thickness_aw = globals.AIRFOIL_DATABASE[airfoil_armwing][-1]
+        chord_thickness_hw = globals.AIRFOIL_DATABASE[airfoil_handwing][-1]
+        wing_volume_aw = chord_avg_aw**2 * span_aw * chord_thickness_aw
+        wing_volume_hw = chord_avg_hw**2 * span_hw * chord_thickness_hw
+        bird_volume = wing_volume_aw + wing_volume_hw
+        bird_mass = bird_volume * bird_density
+
+        # Moment of Inertia (simplified)
+        span_avg = (area_aw + area_hw) / wing_root_chord
+        Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
+        Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
+        Iz = bird_mass*(wing_root_chord**2)/12
+
+        self.AR_aw, self.AR_hw, self.area_aw, self.area_hw = AR_aw, AR_hw, area_aw, area_hw
+        self.COG_position, self.COL_position, self.bird_mass = COG_position, COL_position, bird_mass
+        self.Ix, self.Iy, self.Iz = Ix, Iy, Iz 
 
     @staticmethod
     def get_state_vector_labels():
