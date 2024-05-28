@@ -4,31 +4,65 @@ from scipy.stats import rv_discrete
 from dynamics import forward_step
 import globals
 
-def evaluate_fitness(virtual_creature):
+
+def evaluate_fitness(virtual_creature, fitnesstest = 1):
     # TODO: team to dream up more complicated measures, but right now
     # we just want it to move a lot laterally and not go too far down
 
     # TODO rollout the forward dynamics for the virtual creature 
     # for some number of timesteps, then compute fitness based
     # on performance
-
     # Ensure the creature's state is reset
     virtual_creature.reset_state()
 
-    # forward_step(virtual_creature)
-
     fitness = 0
+    # Define the waypoints as a list of tuples (x, y, z)
+    waypoints = [
+        (1.0, 2.0, 0.0),
+        (3.0, 5.0, 3.0),
+        (6.0, 8.0, 5.0),
+        (9.0, 12.0, 10.0)
+    ]
 
-    # Move a lot laterally (in xy plane)
-    fitness += np.linalg.norm(virtual_creature.position_xyz[:2])
+    # forward_step(virtual_creature)
+    if fitnesstest == 1:
 
-    # Don't go too far down
-    fitness -= virtual_creature.position_xyz[2]
+        # Move a lot laterally (in xy plane)
+        fitness += np.linalg.norm(virtual_creature.position_xyz[:2])
 
-    # If you go way too far down you're dead
-    if virtual_creature.position_xyz[2] < globals.TOO_LOW_Z:
-        fitness = globals.FITNESS_PENALTY_TOO_LOW
+        # Don't go too far down
+        fitness -= virtual_creature.position_xyz[2]
 
+        # If you go way too far down you're dead
+        if virtual_creature.position_xyz[2] < globals.TOO_LOW_Z:
+            fitness = globals.FITNESS_PENALTY_TOO_LOW
+    else:
+
+        # Waypoint finding fitness test
+        total_waypoint_distance = 0
+
+        for waypoint in waypoints:
+            distance_to_waypoint = np.linalg.norm(virtual_creature.position_xyz[:2] - waypoint[:2])
+            total_waypoint_distance += distance_to_waypoint
+
+            # Check if the creature reaches the waypoint (within a threshold)
+            if distance_to_waypoint < globals.WAYPOINT_THRESHOLD:
+                fitness += globals.WAYPOINT_REWARD
+            else:
+                fitness -= globals.WAYPOINT_PENALTY
+        
+        # Penalize for the total distance to all waypoints
+        fitness -= total_waypoint_distance
+
+        # Don't go too far down
+        fitness -= virtual_creature.position_xyz[2]
+
+        # If you go way too far down you're dead
+        if virtual_creature.position_xyz[2] < globals.TOO_LOW_Z:
+            fitness = globals.FITNESS_PENALTY_TOO_LOW
+        
+
+        
     return fitness
 
 def select_fittest_individuals(population, fitness_scores, num_parents, method):
