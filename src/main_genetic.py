@@ -12,7 +12,7 @@ def solve_ga(
 ):
     # Start by initializing the population
     population = [ VirtualCreature.random_init() for _ in range(population_size) ]
-    fitnesstest = 2 #1 for far lateral and 2 for waypoint
+    fitnesstest = 1#1 for far lateral and else for waypoint
     # Loop over some number of generations
     for generation_index in range(num_generations):
        
@@ -37,7 +37,7 @@ def solve_ga(
 
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
-    best_individual = max(population, key=evaluate_fitness(fitnesstest))
+    best_individual = max(population, key=evaluate_fitness) #not sure how this works with fitnesstest argument
     return best_individual
 
 if __name__ == "__main__":
