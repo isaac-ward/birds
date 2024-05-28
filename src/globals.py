@@ -21,6 +21,17 @@ AIR_DENSITY = 1.225 #kg/m^3
 GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
 
+#Fitness Constants
+# Define the Z-value below which the creature is considered "dead"
+TOO_LOW_Z = -1
+# Define the fitness penalty for going too low
+FITNESS_PENALTY_TOO_LOW = -1000
+# Define the distance threshold within which a waypoint is considered "reached"
+WAYPOINT_THRESHOLD = 1.0
+# Define the reward/penalty for reaching a waypoint
+WAYPOINT_REWARD = 100
+WAYPOINT_PENALTY = -50
+
 # Global functions
 def wrapRads(angle:float) -> float:
     wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi

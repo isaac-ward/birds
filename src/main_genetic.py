@@ -12,12 +12,12 @@ def solve_ga(
 ):
     # Start by initializing the population
     population = [ VirtualCreature.random_init() for _ in range(population_size) ]
-
+    fitnesstest = 2 #1 for far lateral and 2 for waypoint
     # Loop over some number of generations
     for generation_index in range(num_generations):
-
+       
         # Evaluate the fitness of each individual in the population
-        fitness_scores = [evaluate_fitness(individual) for individual in population ]
+        fitness_scores = [evaluate_fitness(individual, fitnesstest) for individual in population ]
 
         # Select the fittest individuals to be parents
         parents = select_fittest_individuals(population, fitness_scores, num_parents=num_parents_per_generation, method="truncation") #can be truncation, tournament, roulette for method
@@ -37,7 +37,7 @@ def solve_ga(
 
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
-    best_individual = max(population, key=evaluate_fitness)
+    best_individual = max(population, key=evaluate_fitness(fitnesstest))
     return best_individual
 
 if __name__ == "__main__":
