@@ -13,7 +13,7 @@ CHROMOSOME_DEFINITION = [
     Gene("taper_handwing", 0.0, 1.0),
     Gene("norm_COG_position", 0.0, 1.0),
     Gene("airfoil_armwing", 0.0, 1.0), #NOTE: Change later
-    Gene("airfoil_handwing", 0.0, 1.0) #NOTE: Change later
+    Gene("airfoil_handwing", 0.0, 1.0), #NOTE: Change later
     Gene("basis_left_const", -1.0, 1.0),
     Gene("basis_left_poly1", -1.0, 1.0),
     Gene("basis_left_poly2", -1.0, 1.0),
