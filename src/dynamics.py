@@ -10,16 +10,7 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     # - L: lift (N)
     # - D: drag (N)
 
-    # airfoil_database parameters:
-    # 1) dcL/dAlpha (1/rad)
-    # 2) angle of min stall (rad)
-    # 3) angle of max stall (rad)
-    # 4) cD0
-
-    airfoil_database = {
-        "NACA 0012": [5.72958, -0.122173, 0.122173, 0.021]
-    }
-    [dcLdAlpha, alpha_min, alpha_max, cD0] = airfoil_database[airfoil]
+    [dcLdAlpha, alpha_min, alpha_max, cD0] = globals.AIRFOIL_DATABASE[airfoil][:-1]
     cL = dcLdAlpha * alpha
 
     if alpha < alpha_min or alpha > alpha_max:
@@ -32,57 +23,6 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     D = 0.5*rho_inf*cD*S*V_inf**2
     return L, D
 
-def get_airfoil_thickness(airfoil:str) -> float:
-    airfoil_database = {
-        "NACA 0012": 0.12
-    }
-    return airfoil_database[airfoil]
-
-def get_wing_parameters(virtual_creature):
-    # Get chromosome data
-    wingspan, norm_wrist_position, wing_root_chord = virtual_creature.chromosome.wingspan, virtual_creature.chromosome.norm_wrist_position, virtual_creature.chromosome.wing_root_chord
-    taper_armwing, taper_handwing, norm_COG_position = virtual_creature.chromosome.taper_armwing, virtual_creature.chromosome.taper_handwing, virtual_creature.chromosome.norm_COG_position
-    airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
-    bird_density = globals.BIRD_DENSITY
-    COG_position = norm_COG_position * wing_root_chord
-
-    airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
-
-    # Wing characteristics
-    span_aw = wingspan * norm_wrist_position
-    span_hw = wingspan - span_aw
-    area = lambda b, cr, gamma: (1+gamma)/2*cr*b
-    area_aw = area(span_aw, wing_root_chord, taper_armwing)
-    area_hw = area(span_hw, wing_root_chord*taper_armwing, taper_handwing)
-    AR_aw = span_aw / area_aw
-    AR_hw = span_hw / area_hw
-
-    # Center of lift
-    chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
-    chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
-    chord_avg = (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
-    # x_COL_position = wing_root_chord - 3/4 * chord_avg
-    x_COL_position = 1/4 * wing_root_chord
-
-    z_COL_position = wingspan/4
-
-    # Wing volume
-    chord_thickness_aw = get_airfoil_thickness(airfoil_armwing)
-    chord_thickness_hw = get_airfoil_thickness(airfoil_handwing)
-    wing_volume_aw = chord_avg_aw**2 * span_aw * chord_thickness_aw
-    wing_volume_hw = chord_avg_hw**2 * span_hw * chord_thickness_hw
-    bird_volume = wing_volume_aw + wing_volume_hw
-    bird_mass = bird_volume * bird_density
-
-    # Moment of Inertia (simplified)
-    span_avg = (area_aw + area_hw) / wing_root_chord
-    Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
-    Iz = bird_mass*(span_avg**2 + wing_root_chord**2)/12
-    Iy = bird_mass*(wing_root_chord**2)/12
-    I_mat = np.diag([Ix, Iy, Iz])
-
-    return AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, I_mat
-
 def get_bird2world(quats):
     q1, q2, q3, q0 = quats
     R_bird2world = np.array([[q0**2 + q1**2 - q2**2 - q3**2, 2*(q1*q2 - q0*q3), 2*(q0*q2 + q1*q3)],
@@ -91,13 +31,17 @@ def get_bird2world(quats):
     return R_bird2world
 
 
-def forward_step(virtual_creature, dt=1.0):
+def forward_step(virtual_creature, t, dt=1.0):
     """
     Takes a virtual creature and updates its state by one step based on
     it's current state and the aerodynamic environment
 
     dt units are in seconds
     """
+
+    # Get wing angle
+    wa_left = virtual_creature.calc_wing_angle(t, "left")
+    wa_right = virtual_creature.calc_wing_angle(t, "right")
     
     # +x is forward, +y is up, +z is right
     pos_world = virtual_creature.position_xyz
@@ -105,8 +49,6 @@ def forward_step(virtual_creature, dt=1.0):
     acc_world = virtual_creature.acceleration_xyz
     quats = virtual_creature.quaternions
     pqr = virtual_creature.angular_velocity
-    wa_left = virtual_creature.wing_angle_left
-    wa_right = virtual_creature.wing_angle_right
 
     # Convert frome bird frame to world frame
     R_bird2world = get_bird2world(quats)
@@ -120,7 +62,9 @@ def forward_step(virtual_creature, dt=1.0):
     airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Get wing parameters
-    AR_aw, AR_hw, area_aw, area_hw, COG_position, x_COL_position, z_COL_position, bird_mass, I_mat = get_wing_parameters(virtual_creature)
+    AR_aw, AR_hw, area_aw, area_hw = virtual_creature.AR_aw, virtual_creature.AR_hw, virtual_creature.area_aw, virtual_creature.area_hw
+    COG_position, x_COL_position, z_COL_position = virtual_creature.COG_position, virtual_creature.x_COL_position, virtual_creature.z_COL_position
+    bird_mass, I_mat = virtual_creature.bird_mass, virtual_creature.I_mat
 
     # Find angle of attack & V_inf
     V_inf = np.linalg.norm(uvw)
@@ -148,13 +92,15 @@ def forward_step(virtual_creature, dt=1.0):
                                             AR=AR_hw,
                                             S=area_hw/2,
                                             V_inf=V_inf,
-                                            rho_inf=rho_inf)
+                                            rho_inf=rho_inf
+                                            )
     lift_hw_right, drag_hw_right = get_aero_data(airfoil=airfoil_handwing,
                                                 alpha=alpha_right,
                                                 AR=AR_hw,
                                                 S=area_hw/2,
                                                 V_inf=V_inf,
-                                                rho_inf=rho_inf)
+                                                rho_inf=rho_inf
+                                                )
 
     # Find forces in bird frame
     lift_left = lift_aw_left + lift_hw_left
@@ -209,7 +155,7 @@ def forward_step(virtual_creature, dt=1.0):
         velocity_xyz=vel_world,
         acceleration_xyz=acc_world,
         quaternions=quats,
-        angular_velocity=pqr,
-        wing_angle_left=wa_left,
-        wing_angle_right=wa_right
+        angular_velocity=pqr
     )
+
+    return t + dt

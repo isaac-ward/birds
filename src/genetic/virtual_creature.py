@@ -1,5 +1,6 @@
 import numpy as np 
 
+import globals
 from genetic.chromosome import Chromosome
 
 class VirtualCreature:
@@ -38,9 +39,7 @@ class VirtualCreature:
         velocity_xyz,
         acceleration_xyz,
         quaternions,
-        angular_velocity,
-        wing_angle_left,
-        wing_angle_right
+        angular_velocity
     ):
         """
         Updates the state of the virtual creature by one step
@@ -51,8 +50,6 @@ class VirtualCreature:
         self.acceleration_xyz = acceleration_xyz # m/s^2
         self.quaternions = quaternions           # scalar is last term [q1, q2, q3, q0]
         self.angular_velocity = angular_velocity # rad/s (pqr in bird frame)
-        self.wing_angle_left = wing_angle_left   # rad (angle between left wing and bird body)
-        self.wing_angle_right = wing_angle_right # rad (angle between right wing and bird body)
     
     def reset_state(self):
         """
@@ -63,9 +60,7 @@ class VirtualCreature:
             velocity_xyz=np.array([10.0, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
-            angular_velocity=np.zeros(3),
-            wing_angle_left=0.035,
-            wing_angle_right=0.0175
+            angular_velocity=np.zeros(3)
         )
 
     def get_state_vector(self):
@@ -77,9 +72,7 @@ class VirtualCreature:
             self.velocity_xyz,
             self.acceleration_xyz,
             self.quaternions,
-            self.angular_velocity,
-            np.array([self.wing_angle_left]),
-            np.array([self.wing_angle_right])
+            self.angular_velocity
         ])
     
     def get_mass_parameters(self):
@@ -101,9 +94,13 @@ class VirtualCreature:
         AR_aw = span_aw / area_aw
         AR_hw = span_hw / area_hw
 
+        # Center of lift
         chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
         chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
-        COL_position = 1/4 * wing_root_chord
+        chord_avg = (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
+        x_COL_position = 1/4 * wing_root_chord
+
+        z_COL_position = wingspan/4
 
         # Wing volume
         chord_thickness_aw = globals.AIRFOIL_DATABASE[airfoil_armwing][-1]
@@ -116,12 +113,21 @@ class VirtualCreature:
         # Moment of Inertia (simplified)
         span_avg = (area_aw + area_hw) / wing_root_chord
         Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
-        Iy = bird_mass*(span_avg**2 + wing_root_chord**2)/12
-        Iz = bird_mass*(wing_root_chord**2)/12
+        Iz = bird_mass*(span_avg**2 + wing_root_chord**2)/12
+        Iy = bird_mass*(wing_root_chord**2)/12
+        I_mat = np.diag([Ix, Iy, Iz])
 
         self.AR_aw, self.AR_hw, self.area_aw, self.area_hw = AR_aw, AR_hw, area_aw, area_hw
-        self.COG_position, self.COL_position, self.bird_mass = COG_position, COL_position, bird_mass
-        self.Ix, self.Iy, self.Iz = Ix, Iy, Iz
+        self.COG_position, self.x_COL_position, self.z_COL_position = COG_position, x_COL_position, z_COL_position
+        self.bird_mass, self.I_mat = bird_mass, I_mat
+
+    @staticmethod
+    def calc_wing_angle(self, t, wing_choice):
+        if wing_choice == "left":
+            fdas
+        elif wing_choice == "right":
+            fdasjkl
+        else:
 
     @staticmethod
     def get_state_vector_labels():
