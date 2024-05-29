@@ -51,6 +51,17 @@ AIR_DENSITY = 1.225 #kg/m^3
 GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
 
+# Global airfoil data
+# airfoil_database parameters:
+# 1) dcL/dAlpha (1/rad)
+# 2) angle of min stall (rad)
+# 3) angle of max stall (rad)
+# 4) cD0
+# 5) thickness
+AIRFOIL_DATABASE = {
+    "NACA 0012": [5.72958, -0.122173, 0.122173, 0.021, 0.12]
+}
+
 # Global functions
 def wrapRads(angle:float) -> float:
     wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi
