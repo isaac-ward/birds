@@ -17,7 +17,10 @@ if __name__ == "__main__":
     
     # Make a creature
     # creature = VirtualCreature.random_init()
-    creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.25, 0.0, 0.0]))
+    basis_values_left  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    chromosome_values  = [10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]
+    creature = VirtualCreature(Chromosome(chromosome_values+basis_values_left+basis_values_right))
 
     # Plot what it looks like at the start
     if True:
@@ -33,8 +36,9 @@ if __name__ == "__main__":
 
     # Run the creature for some time
     # Simulation parameters
-    simulation_time_seconds = 2.5
-    dt = 0.05
+    simulation_time_seconds = 7.5
+    dt = 0.1
+    t = 0
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
     render_video = True
@@ -46,10 +50,10 @@ if __name__ == "__main__":
     for i in tqdm(range(num_steps), desc="Running forward dynamics"):
 
         # Run the dynamics forward
-        forward_step(creature, dt=dt)
+        t = forward_step(creature, t, dt=dt)
 
         # Get the state vector and log
-        state_vector = creature.get_state_vector()
+        state_vector = creature.get_state_vector(t)
         state_trajectory.append(state_vector)
 
         # Plot every frame so that we can see what's going on
@@ -57,7 +61,7 @@ if __name__ == "__main__":
             visuals.render_3d_frame(
                 f"{log_folder}/frames/{i}.png",
                 creature,
-                extents=[(-5,20), (-8,8), (-5,15)],
+                extents=[(-5,40), (-8,8), (-5,40)],
                 past_3d_positions=state_trajectory,
                 current_time_s=i*dt,
                 total_time_s=simulation_time_seconds

@@ -160,12 +160,18 @@ def render_3d_frame(
 
     # Make the plot
     fig = plt.figure(figsize=(10, 10))
-    # Make a 2x2 grid of 3d subplots
+    # Make a 2x3 grid of 3d subplots
     axes = [
-        fig.add_subplot(221, projection='3d'),
-        fig.add_subplot(222, projection='3d'),
-        fig.add_subplot(223, projection='3d'),
-        fig.add_subplot(224, projection='3d')
+        # overall view
+        fig.add_subplot(221, projection='3d'), 
+
+        # ortho views
+        fig.add_subplot(224, projection='3d'), 
+        fig.add_subplot(225, projection='3d'), 
+        fig.add_subplot(226, projection='3d'),
+        
+        # close up view
+        fig.add_subplot(222, projection='3d'), 
     ]
     axes[1].set_proj_type('ortho')
     axes[2].set_proj_type('ortho')
@@ -182,7 +188,7 @@ def render_3d_frame(
         if render_as_mesh:
         
             # Get the vertices and faces and show in matplotlib
-            vertices, faces = virtual_creature.get_mesh_verts_and_faces()
+            vertices, faces = virtual_creature.get_mesh_verts_and_faces(current_time_s)
 
             # Need to apply the translation and rotation to the vertices
             # before rendering. Position is x,y,z and rotation is euler

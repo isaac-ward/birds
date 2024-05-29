@@ -1,42 +1,57 @@
 import numpy as np
 from scipy.stats import rv_discrete
+from tqdm import tqdm
 
 from dynamics import forward_step
 import globals
 
 
-def evaluate_fitness(virtual_creature, fitnesstest = 1):
-    # TODO: team to dream up more complicated measures, but right now
-    # we just want it to move a lot laterally and not go too far down
+def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
-    # TODO rollout the forward dynamics for the virtual creature 
-    # for some number of timesteps, then compute fitness based
-    # on performance
     # Ensure the creature's state is reset
     virtual_creature.reset_state()
 
+    # Start with no fitness
     fitness = 0
-    # Define the waypoints as a list of tuples (x, y, z)
-    waypoints = [
-        (1.0, 2.0, 0.0),
-        (3.0, 5.0, 3.0),
-        (6.0, 8.0, 5.0),
-        (9.0, 12.0, 10.0)
-    ]
+
+    # We'll log all this
+    state_trajectory = []
 
     # forward_step(virtual_creature)
-    if fitnesstest == 1:
+    if test_mode == 1:
 
-        # Move a lot laterally (in xy plane)
-        fitness += np.linalg.norm(virtual_creature.position_xyz[:2])
+        # Rollout a simulation
+        # Simulation parameters
+        simulation_time_seconds = 7.5
+        dt = 0.05
+        t = 0
+        num_steps = int(simulation_time_seconds / dt)
+        for i in tqdm(range(num_steps), desc="Evaluating virtual creature's fitness", leave=False):
+            # Run the dynamics forward
+            t = forward_step(virtual_creature, t, dt=dt)
 
-        # Don't go too far down
-        fitness -= virtual_creature.position_xyz[2]
+            # Get the state vector and log
+            state_vector = virtual_creature.get_state_vector(t)
+            state_trajectory.append(state_vector)
 
-        # If you go way too far down you're dead
-        if virtual_creature.position_xyz[2] < globals.TOO_LOW_Z:
-            fitness = globals.FITNESS_PENALTY_TOO_LOW
-    else:
+        # Now evaluate the fitness based on the trajectory
+        # A fitter creature will have:
+        # - gone forward more in the +x direction
+        # - gone down less in the +z direction
+        # This is basically just a glide ratio
+        final_x = state_trajectory[-1][0]
+        final_z = state_trajectory[-1][2]
+        glide_ratio = final_x / final_z
+        fitness = glide_ratio
+
+    elif test_mode == 2:
+        # Define the waypoints as a list of tuples (x, y, z)
+        waypoints = [
+            (1.0, 2.0, 0.0),
+            (3.0, 5.0, 3.0),
+            (6.0, 8.0, 5.0),
+            (9.0, 12.0, 10.0)
+        ]
 
         # Waypoint finding fitness test
         total_waypoint_distance = 0
@@ -60,10 +75,14 @@ def evaluate_fitness(virtual_creature, fitnesstest = 1):
         # If you go way too far down you're dead
         if virtual_creature.position_xyz[2] < globals.TOO_LOW_Z:
             fitness = globals.FITNESS_PENALTY_TOO_LOW
-        
-
-        
-    return fitness
+    
+    else:
+        raise ValueError(f"Unsupported fitness test mode '{test_mode}'")
+    
+    if return_logging_data:
+        return fitness, state_trajectory
+    else:
+        return fitness
 
 def select_fittest_individuals(population, fitness_scores, num_parents, method):
     """

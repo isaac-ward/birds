@@ -1,6 +1,7 @@
 import numpy as np 
 import random
 
+import globals
 from genetic.chromosome import Chromosome
 
 class VirtualCreature:
@@ -23,8 +24,8 @@ class VirtualCreature:
         self.reset_state()
 
         # TODO: Kusal please feel free to add other kinematic parameters
-        # here (note that these are not genes! they are the state of the
-        # creature in the world, not the parameters that define the creature)
+        self.get_mass_parameters()
+        self.get_basis_functions()
 
     @classmethod
     def random_init(cls):
@@ -53,8 +54,10 @@ class VirtualCreature:
         self.acceleration_xyz = acceleration_xyz # m/s^2
         self.quaternions = quaternions           # scalar is last term [q1, q2, q3, q0]
         self.angular_velocity = angular_velocity # rad/s (pqr in bird frame)
-        self.wing_angle_left = wing_angle_left   # rad (angle between left wing and bird body)
-        self.wing_angle_right = wing_angle_right # rad (angle between right wing and bird body)
+
+        # Wing angles
+        self.wing_angle_left = wing_angle_left
+        self.wing_angle_right = wing_angle_right
     
     def reset_state(self):
         """
@@ -62,13 +65,12 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.array([10.0, 0.0, 0.0]),
+            velocity_xyz=np.array([5.0, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),
-            # Appears to be angle down
-            wing_angle_left=0.0,
-            wing_angle_right=0.0
+            wing_angle_left=self.calc_wing_angle(0, "left"),
+            wing_angle_right=self.calc_wing_angle(0, "right")
         )
 
     def get_state_vector(self):
@@ -81,9 +83,81 @@ class VirtualCreature:
             self.acceleration_xyz,
             self.quaternions,
             self.angular_velocity,
-            np.array([self.wing_angle_left]),
-            np.array([self.wing_angle_right])
+            [self.wing_angle_left, self.wing_angle_right]
         ])
+    
+    def get_mass_parameters(self):
+        # Get chromosome data
+        wingspan, norm_wrist_position, wing_root_chord = self.chromosome.wingspan, self.chromosome.norm_wrist_position, self.chromosome.wing_root_chord
+        taper_armwing, taper_handwing, norm_COG_position = self.chromosome.taper_armwing, self.chromosome.taper_handwing, self.chromosome.norm_COG_position
+        airfoil_armwing, airfoil_handwing = self.chromosome.airfoil_armwing, self.chromosome.airfoil_handwing
+        bird_density = globals.BIRD_DENSITY
+        COG_position = norm_COG_position * wing_root_chord
+
+        airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
+
+        # Wing characteristics
+        span_aw = wingspan * norm_wrist_position
+        span_hw = wingspan - span_aw
+        area = lambda b, cr, gamma: (1+gamma)/2*cr*b
+        area_aw = area(span_aw, wing_root_chord, taper_armwing)
+        area_hw = area(span_hw, wing_root_chord*taper_armwing, taper_handwing)
+        AR_aw = span_aw / area_aw
+        AR_hw = span_hw / area_hw
+
+        # Center of lift
+        chord_avg_aw = (1+taper_armwing)/2 * wing_root_chord
+        chord_avg_hw = (1+taper_handwing)/2 * taper_armwing * wing_root_chord
+        chord_avg = (norm_wrist_position*chord_avg_aw + (1-norm_wrist_position)*chord_avg_hw)
+        x_COL_position = 1/4 * wing_root_chord
+
+        z_COL_position = wingspan/4
+
+        # Wing volume
+        chord_thickness_aw = globals.AIRFOIL_DATABASE[airfoil_armwing][-1]
+        chord_thickness_hw = globals.AIRFOIL_DATABASE[airfoil_handwing][-1]
+        wing_volume_aw = chord_avg_aw**2 * span_aw * chord_thickness_aw
+        wing_volume_hw = chord_avg_hw**2 * span_hw * chord_thickness_hw
+        bird_volume = wing_volume_aw + wing_volume_hw
+        bird_mass = bird_volume * bird_density
+
+        # Moment of Inertia (simplified)
+        span_avg = (area_aw + area_hw) / wing_root_chord
+        Ix = bird_mass*(span_avg**2)/12 + bird_mass*(COG_position-0.5*wing_root_chord)**2
+        Iz = bird_mass*(span_avg**2 + wing_root_chord**2)/12
+        Iy = bird_mass*(wing_root_chord**2)/12
+        I_mat = np.diag([Ix, Iy, Iz])
+
+        self.AR_aw, self.AR_hw, self.area_aw, self.area_hw = AR_aw, AR_hw, area_aw, area_hw
+        self.COG_position, self.x_COL_position, self.z_COL_position = COG_position, x_COL_position, z_COL_position
+        self.bird_mass, self.I_mat = bird_mass, I_mat
+    
+    def get_basis_functions(self):
+        left_basis = [self.chromosome.basis_left_const, self.chromosome.basis_left_poly1, self.chromosome.basis_left_poly2,
+                      self.chromosome.basis_left_poly3, self.chromosome.basis_left_poly4, self.chromosome.basis_left_poly5,
+                      self.chromosome.basis_left_sinamp1, self.chromosome.basis_left_sinfreq1, self.chromosome.basis_left_sinamp2,
+                      self.chromosome.basis_left_sinfreq2, self.chromosome.basis_left_sawtooth, self.chromosome.basis_left_expamp1,
+                      self.chromosome.basis_left_exppwer1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
+        right_basis = [self.chromosome.basis_right_const, self.chromosome.basis_right_poly1, self.chromosome.basis_right_poly2,
+                      self.chromosome.basis_right_poly3, self.chromosome.basis_right_poly4, self.chromosome.basis_right_poly5,
+                      self.chromosome.basis_right_sinamp1, self.chromosome.basis_right_sinfreq1, self.chromosome.basis_right_sinamp2,
+                      self.chromosome.basis_right_sinfreq2, self.chromosome.basis_right_sawtooth, self.chromosome.basis_right_expamp1,
+                      self.chromosome.basis_right_exppwer1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
+        self.left_basis, self.right_basis = left_basis, right_basis
+
+    def calc_wing_angle(self, t, wing_choice):
+        if wing_choice == "left":
+            basis = self.left_basis
+        elif wing_choice == "right":
+            basis = self.right_basis
+        else:
+            raise TypeError("Input either left or right for wing_choice")
+        
+        polynomial = basis[0] + basis[1]*t + basis[2]*t**2 + basis[3]*t**4 + basis[4]*t**4 + basis[5]*t**5
+        sinusoid = basis[6]*np.sin(basis[7]*t) + basis[8]*np.sin(basis[9]*t)
+        sawtooth = t % basis[10]
+        exponential = basis[11]*np.exp(basis[12]*t) + basis[13]*np.exp(basis[14]*t)
+        return polynomial + sinusoid + sawtooth + exponential
 
     @staticmethod
     def get_state_vector_labels():
@@ -100,7 +174,7 @@ class VirtualCreature:
             "ax", "ay", "az",
             "rx (roll)", "ry (yaw)", "rz (pitch)",
             "ωx", "ωy", "ωz",
-            "wing_angle"
+            "wing_angle_left", "wing_angle_right"
         ]
 
     def mutate(self, sigma):
@@ -133,8 +207,6 @@ class VirtualCreature:
         s += f"a  = {self.acceleration_xyz}\n"
         s += f"r  = {self.quaternions}\n"
         s += f"ω  = {self.angular_velocity}\n"
-        s += f"wa = {self.wing_angle_left}\n"
-        s += f"wa = {self.wing_angle_right}\n"
         s += "\n"
         # Write out the chromosome
         s += "chromosome:\n"
@@ -142,7 +214,7 @@ class VirtualCreature:
         s += "----------------\n"
         return s
     
-    def get_mesh_verts_and_faces(self):
+    def get_mesh_verts_and_faces(self, t):
         
         # These are the genes
         # Gene("wingspan", 0.0, 10.0),
@@ -236,8 +308,9 @@ class VirtualCreature:
                 [0, 1, 0],
                 [-np.sin(angle), 0, np.cos(angle)]
             ])
-        left_wing_vertices  = left_wing_vertices @ get_wing_angle_rot(self.wing_angle_left)
-        right_wing_vertices = right_wing_vertices @ get_wing_angle_rot(self.wing_angle_right)
+
+        left_wing_vertices  = left_wing_vertices  @ get_wing_angle_rot(self.calc_wing_angle(t, "left"))
+        right_wing_vertices = right_wing_vertices @ get_wing_angle_rot(self.calc_wing_angle(t, "right"))
 
         # Now we can construct the full vertices and faces
         vertices.extend(left_wing_vertices)
