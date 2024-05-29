@@ -59,11 +59,13 @@ class Chromosome:
         for gene in CHROMOSOME_DEFINITION:
             s += f"{gene.name} = {getattr(self, gene.name)}\n"
         return s
+    
     def crossover(self, other):
         # Single point crossover
         crossover_point = random.randint(0, len(CHROMOSOME_DEFINITION) - 1)
         new_vector = [getattr(self, gene.name) if i <= crossover_point else getattr(other, gene.name) for i, gene in enumerate(CHROMOSOME_DEFINITION)]
         return Chromosome(np.array(new_vector))
+    
     def mutate(self, sigma):
         # Mutate each gene attribute using Gaussian noise
         for gene in CHROMOSOME_DEFINITION:

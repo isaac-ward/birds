@@ -29,3 +29,8 @@ conda activate birds
 <install new packages>
 conda env export --no-builds | grep -v "^prefix: " > env.yaml
 ```
+
+For removing all logs but keeping the .gitkeep:
+```
+rm -rf logs/*
+```
