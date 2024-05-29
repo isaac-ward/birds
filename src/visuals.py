@@ -3,10 +3,16 @@ import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import os
+import copy
 
 import moviepy.editor as mpy
+from tqdm import tqdm
 
-def plot_state_trajectory(filepath, state_trajectory, state_element_labels):
+from dynamics import forward_step
+from genetic.virtual_creature import VirtualCreature
+from globals import CHROMOSOME_DEFINITION
+
+def plot_state_trajectory(filepath, state_trajectory, state_element_labels=VirtualCreature.get_state_vector_labels()):
     """
     A state trajectory is an iterable where each iterate
     is a vector representing the state at that time step
@@ -98,6 +104,125 @@ def plot_state_trajectory(filepath, state_trajectory, state_element_labels):
     plt.savefig(filepath, dpi=600)
     plt.close()
 
+def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
+    """
+    Plot the fitness scores of the population over time
+    """
+
+    # Create the plot
+    fig = plt.figure(figsize=(6, 6), dpi=600)
+    ax = fig.add_subplot(111)
+    
+    # Want to plot the worst (red), best (green), and average (blue) fitness scores
+    num_generations = len(fitness_scores_per_generation)
+    x = list(range(num_generations))
+    worst_fitnesses = [min(fitness_scores) for fitness_scores in fitness_scores_per_generation]
+    best_fitnesses = [max(fitness_scores) for fitness_scores in fitness_scores_per_generation]
+    average_fitnesses = [np.mean(fitness_scores) for fitness_scores in fitness_scores_per_generation]
+
+    # Plot the fitness scores
+    ax.plot(x, worst_fitnesses, color='red', label='worst')
+    ax.plot(x, best_fitnesses, color='green', label='best')
+    ax.plot(x, average_fitnesses, color='blue', label='average')
+
+    # Add a legend
+    ax.legend()
+
+    # Save the plot
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=600)
+    plt.close()
+
+def plot_fitnesses(filepath, fitness_scores):
+    """
+    As a box plot, plot the fitness scores of the population
+    """
+
+    # Create the plot
+    fig = plt.figure(figsize=(6, 6), dpi=600)
+    ax = fig.add_subplot(111)
+
+    # Plot the fitness scores as a box plot
+    ax.boxplot(fitness_scores)
+
+    # Save the plot
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=600)
+    plt.close()
+
+def plot_chromosome_distributions(filepath, population, fittest_index):
+    """
+    We have a population of virtual creatures that each have some value
+    for each chromosome. We want to visualize the distribution of each
+    of them with a box plot, and then highlight the fittest individual
+    """
+
+    # What are the cutoffs for the chromosome values? Each will be a subplot
+    names = []
+    min_values = []
+    max_values = []
+    values_per_gene = {}
+
+    # Get the chromosome values for each individual
+    for gene in range(len(CHROMOSOME_DEFINITION)):
+        name = CHROMOSOME_DEFINITION[gene].name
+        names.append(name)
+        min_values.append(CHROMOSOME_DEFINITION[gene].min_val)
+        max_values.append(CHROMOSOME_DEFINITION[gene].max_val)
+        values_per_gene[name] = [getattr(creature.chromosome, name) for creature in population]
+
+    # Here's how we're going to plot this. There will be 
+    # 9 rows of plots, each row corresponding to some grouping.
+    # In each row we'll have the following number of plots
+    plots_per_row = [8, 6, 4, 1, 4, 6, 4, 1, 4]
+    n_rows = len(plots_per_row)
+    n_cols = max(plots_per_row)
+
+    # Create the plot
+    fig = plt.figure(figsize=(16, 16), dpi=600)
+    
+    # Create the subplots
+    axes = [fig.add_subplot(n_rows, n_cols, i+1) for i in range(n_rows * n_cols)]
+
+    # Plot row by row
+    gene_index = 0
+    for i in range(n_rows):
+        for j in range(n_cols):
+            if j < plots_per_row[i]:
+                # Get the name of the gene
+                gene_name = names[gene_index]
+                # Get the values for this gene
+                values = values_per_gene[gene_name]
+                # Plot the box plot
+                axes[i * n_cols + j].boxplot(values)
+                axes[i * n_cols + j].set_title(gene_name)
+                axes[i * n_cols + j].set_ylim(min_values[gene_index], max_values[gene_index])
+                # Add a grid
+                axes[i * n_cols + j].grid(True)
+
+                # Highlight the fittest individual
+                axes[i * n_cols + j].axhline(getattr(population[fittest_index].chromosome, gene_name), color='green')
+                # Plot the actual number just above the line, at the very left of the plot
+                x_text = 0.35
+                y_text = getattr(population[fittest_index].chromosome, gene_name)
+                axes[i * n_cols + j].text(x_text, y_text, f"{y_text:.2f}", color='green')
+
+                # Remove the xticks
+                axes[i * n_cols + j].set_xticks([])
+                # Make y ticks have 8 divisions from the gene min to max
+                axes[i * n_cols + j].set_yticks(np.linspace(min_values[gene_index], max_values[gene_index], 8))
+
+                # Move to the next gene
+                gene_index += 1
+            else:
+                # Hide the plot
+                axes[i * n_cols + j].axis('off')
+
+    # Save the plot
+    plt.tight_layout()
+    plt.savefig(filepath, dpi=600)
+    plt.close()
+
 def get_3d_translation_matrix(translation):
     return np.array([
         [1, 0, 0, translation[0]],
@@ -163,15 +288,15 @@ def render_3d_frame(
     # Make a 2x3 grid of 3d subplots
     axes = [
         # overall view
-        fig.add_subplot(221, projection='3d'), 
+        fig.add_subplot(231, projection='3d'), 
 
         # ortho views
-        fig.add_subplot(224, projection='3d'), 
-        fig.add_subplot(225, projection='3d'), 
-        fig.add_subplot(226, projection='3d'),
-        
+        fig.add_subplot(234, projection='3d'), 
+        fig.add_subplot(235, projection='3d'), 
+        fig.add_subplot(236, projection='3d'),
+
         # close up view
-        fig.add_subplot(222, projection='3d'), 
+        fig.add_subplot(232, projection='3d'), 
     ]
     axes[1].set_proj_type('ortho')
     axes[2].set_proj_type('ortho')
@@ -346,13 +471,68 @@ def sequence_frames_to_video(filepaths_in, filepath_out, fps=30):
     # Write the video
     clip.write_videofile(filepath_out, fps=fps)
 
-def render_realtime():
-    # TODO: irw + aditi to use pygame to create a real-time simulation 
-    # visualization of genetic algorithm solution
-    pass
+def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, fps=25):
 
-def render_from_log():
-    # TODO: irw + aditi to use pygame to create a visualization of
-    # the genetic algorithm solution from a log file
-    # TODO: irw + aditi to pull in blender scripts
-    pass
+    # Make a copy of the creature and reset its state
+    creature = copy.deepcopy(creature)
+    creature.reset_state()
+    
+    # Run the creature for some time
+    t = 0
+    num_steps = int(simulation_time_seconds / dt)
+    # Set FPS so that we get realtime playback
+    playback_speed = 1.0
+    fps = 1 / (dt * playback_speed)
+    # Log the following for rendering frames
+    creature_at_time = []
+    running_state_trajectory = []
+    state_trajectory_at_time = []
+    times = []
+
+    # Do the simulation
+    for i in tqdm(range(num_steps), desc="Running forward dynamics to generate video"):
+
+        # Run the dynamics forward
+        forward_step(creature, t, dt=dt)
+
+        # Get the state vector
+        state_vector = creature.get_state_vector()
+        running_state_trajectory.append(state_vector)
+        
+        # Log everyrthing over time
+        creature_at_time.append(copy.deepcopy(creature))
+        state_trajectory_at_time.append(copy.deepcopy(running_state_trajectory))
+        times.append(t)
+
+        t += dt
+
+    # Now we know the extents
+    extents = [
+        (min([state[0] for state in running_state_trajectory]), max([state[0] for state in running_state_trajectory])),
+        (min([state[1] for state in running_state_trajectory]), max([state[1] for state in running_state_trajectory])),
+        (min([state[2] for state in running_state_trajectory]), max([state[2] for state in running_state_trajectory])),
+    ]
+    # Add a buffer 
+    scale_factor = 1.2
+    extents = [ (scale_factor * extent[0], scale_factor * extent[1]) for extent in extents]
+
+    # Do the rendering of the frames
+    filepaths = []
+    for i in tqdm(range(num_steps), desc="Rendering frames for video"):
+        filepath = f"{log_folder}/frames/{i}.png"
+        render_3d_frame(
+            filepath,
+            creature_at_time[i],
+            extents=extents,
+            past_3d_positions=state_trajectory_at_time[i],
+            current_time_s=times[i],
+            total_time_s=simulation_time_seconds
+        )
+        filepaths.append(filepath)
+
+    # Plot a video of the creature from the frames
+    sequence_frames_to_video(
+        filepath,
+        f"{log_folder}/video.mp4",
+        fps=fps
+    )

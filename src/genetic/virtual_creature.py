@@ -20,12 +20,12 @@ class VirtualCreature:
         # A chromosome directly describes a virtual creature
         self.chromosome = chromosome
 
-        # Kinematic parameters (describe it in the world)
-        self.reset_state()
-
         # TODO: Kusal please feel free to add other kinematic parameters
         self.get_mass_parameters()
         self.get_basis_functions()
+
+        # Kinematic parameters (describe it in the world)
+        self.reset_state()
 
     @classmethod
     def random_init(cls):
@@ -65,7 +65,7 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.array([5.0, 0.0, 0.0]),
+            velocity_xyz=np.array([10.0, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),
@@ -137,12 +137,12 @@ class VirtualCreature:
                       self.chromosome.basis_left_poly3, self.chromosome.basis_left_poly4, self.chromosome.basis_left_poly5,
                       self.chromosome.basis_left_sinamp1, self.chromosome.basis_left_sinfreq1, self.chromosome.basis_left_sinamp2,
                       self.chromosome.basis_left_sinfreq2, self.chromosome.basis_left_sawtooth, self.chromosome.basis_left_expamp1,
-                      self.chromosome.basis_left_exppwer1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
+                      self.chromosome.basis_left_exppwr1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
         right_basis = [self.chromosome.basis_right_const, self.chromosome.basis_right_poly1, self.chromosome.basis_right_poly2,
                       self.chromosome.basis_right_poly3, self.chromosome.basis_right_poly4, self.chromosome.basis_right_poly5,
                       self.chromosome.basis_right_sinamp1, self.chromosome.basis_right_sinfreq1, self.chromosome.basis_right_sinamp2,
                       self.chromosome.basis_right_sinfreq2, self.chromosome.basis_right_sawtooth, self.chromosome.basis_right_expamp1,
-                      self.chromosome.basis_right_exppwer1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
+                      self.chromosome.basis_right_exppwr1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
         self.left_basis, self.right_basis = left_basis, right_basis
 
     def calc_wing_angle(self, t, wing_choice):
@@ -153,10 +153,14 @@ class VirtualCreature:
         else:
             raise TypeError("Input either left or right for wing_choice")
         
-        polynomial = basis[0] + basis[1]*t + basis[2]*t**2 + basis[3]*t**4 + basis[4]*t**4 + basis[5]*t**5
-        sinusoid = basis[6]*np.sin(basis[7]*t) + basis[8]*np.sin(basis[9]*t)
-        sawtooth = t % basis[10]
-        exponential = basis[11]*np.exp(basis[12]*t) + basis[13]*np.exp(basis[14]*t)
+        # For readability let's pull out all the basis functions values
+        const, poly1, poly2, poly3, poly4, poly5, sinamp1, sinfreq1, sinamp2, sinfreq2, sawtooth, expamp1, exppwr1, expamp2, exppwr2 = basis
+        
+        # Compute the value for the wing angle
+        polynomial  = const + poly1*t + poly2*t**2 + poly3*t**3 + poly4*t**4 + poly5*t**5
+        sinusoid    = sinamp1*np.sin(sinfreq1*t) + sinamp2*np.sin(sinfreq2*t)
+        sawtooth    = t % sawtooth
+        exponential = expamp1*np.exp(exppwr1*t) + expamp2*np.exp(exppwr2*t)
         return polynomial + sinusoid + sawtooth + exponential
 
     @staticmethod
@@ -176,16 +180,7 @@ class VirtualCreature:
             "ωx", "ωy", "ωz",
             "wing_angle_left", "wing_angle_right"
         ]
-
-    def mutate(self, sigma):
-        """
-        Mutates the chromosome of the virtual creature
-        with a given mutation rate
-        """
-        #Gaussian mutation by adding zero mean Gaussian Noise (Alg 9.9)
-        return VirtualCreature(self.chromosome.mutate(sigma))
-
-
+    
     def crossover(self, other):
         """
         Crosses over the chromosome of the virtual creature
@@ -193,6 +188,14 @@ class VirtualCreature:
         """
         # from textbook single point cross over and will choose a random index to split and stitch the chromosome 
         return VirtualCreature(self.chromosome.crossover(other.chromosome))
+
+    def mutate(self):
+        """
+        Mutates the chromosome of the virtual creature
+        with a given mutation rate
+        """
+        #Gaussian mutation by adding zero mean Gaussian Noise (Alg 9.9)
+        return VirtualCreature(self.chromosome.mutate())
 
     def __str__(self):
         """

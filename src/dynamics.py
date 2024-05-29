@@ -156,8 +156,6 @@ def forward_step(virtual_creature, t, dt=1.0):
         acceleration_xyz=acc_world,
         quaternions=quats,
         angular_velocity=pqr,
-        wing_angle_left=virtual_creature.calculate_wing_angle_left(t + dt),
-        wing_angle_right=virtual_creature.calculate_wing_angle_right(t + dt)
+        wing_angle_left=virtual_creature.calc_wing_angle(t + dt, "left"),
+        wing_angle_right=virtual_creature.calc_wing_angle(t + dt, "right")
     )
-
-    return t + dt

@@ -22,16 +22,17 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
         # Rollout a simulation
         # Simulation parameters
-        simulation_time_seconds = 7.5
+        simulation_time_seconds = 0.5
         dt = 0.05
         t = 0
         num_steps = int(simulation_time_seconds / dt)
-        for i in tqdm(range(num_steps), desc="Evaluating virtual creature's fitness", leave=False):
+        for i in tqdm(range(num_steps), desc="Evaluating virtual creature's fitness", leave=False, disable=True):
             # Run the dynamics forward
-            t = forward_step(virtual_creature, t, dt=dt)
+            forward_step(virtual_creature, t, dt=dt)
+            t += dt
 
             # Get the state vector and log
-            state_vector = virtual_creature.get_state_vector(t)
+            state_vector = virtual_creature.get_state_vector()
             state_trajectory.append(state_vector)
 
         # Now evaluate the fitness based on the trajectory

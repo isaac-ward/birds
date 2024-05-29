@@ -61,14 +61,17 @@ class Chromosome:
         return s
     
     def crossover(self, other):
-        # Single point crossover
+        # Single point crossover (i.e., the first part of one chromosome is combined with the second part of the other)
         crossover_point = random.randint(0, len(CHROMOSOME_DEFINITION) - 1)
         new_vector = [getattr(self, gene.name) if i <= crossover_point else getattr(other, gene.name) for i, gene in enumerate(CHROMOSOME_DEFINITION)]
         return Chromosome(np.array(new_vector))
     
-    def mutate(self, sigma):
+    def mutate(self):
+        # Compute the sigma for each gene based on it's valid range
+        sigmas = np.array([(gene.max_val - gene.min_val) / 8 for gene in CHROMOSOME_DEFINITION])
+
         # Mutate each gene attribute using Gaussian noise
-        for gene in CHROMOSOME_DEFINITION:
-            mutated_value = np.clip(getattr(self, gene.name) + np.random.normal(0, sigma), gene.min_val, gene.max_val)
+        for i, gene in enumerate(CHROMOSOME_DEFINITION):
+            mutated_value = np.clip(getattr(self, gene.name) + np.random.normal(0, sigmas[i]), gene.min_val, gene.max_val)
             setattr(self, gene.name, mutated_value)
         return self
