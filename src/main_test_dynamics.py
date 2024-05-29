@@ -48,7 +48,6 @@ if __name__ == "__main__":
 
         # Run the dynamics forward
         t = forward_step(creature, t, dt=dt)
-        print(t)
 
         # Get the state vector and log
         state_vector = creature.get_state_vector()
