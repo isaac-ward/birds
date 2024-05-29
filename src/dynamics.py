@@ -94,7 +94,6 @@ def forward_step(virtual_creature, dt=1.0):
     airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
 
     # Find angle of attack & V_inf
-    # angle_of_attack = globals.wrapRads(wa + r[2])
     velocity_angle = globals.wrapRads(np.arctan2(-v[1],v[0]))
     angle_of_attack = wa + r[2] + velocity_angle
     V_inf = np.linalg.norm(v[0:1])

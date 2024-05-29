@@ -25,6 +25,8 @@ class VirtualCreature:
         # TODO: Kusal please feel free to add other kinematic parameters
         self.get_mass_parameters()
 
+        self.get_basis_functions()
+
     @classmethod
     def random_init(cls):
         """
@@ -118,7 +120,21 @@ class VirtualCreature:
 
         self.AR_aw, self.AR_hw, self.area_aw, self.area_hw = AR_aw, AR_hw, area_aw, area_hw
         self.COG_position, self.COL_position, self.bird_mass = COG_position, COL_position, bird_mass
-        self.Ix, self.Iy, self.Iz = Ix, Iy, Iz 
+        self.Ix, self.Iy, self.Iz = Ix, Iy, Iz
+
+    def get_basis_functions(self):
+        left_basis = [self.chromosome.basis_left_const, self.chromosome.basis_left_poly1, self.chromosome.basis_left_poly2,
+                      self.chromosome.basis_left_poly3, self.chromosome.basis_left_poly4, self.chromosome.basis_left_poly5,
+                      self.chromosome.basis_left_sinamp1, self.chromosome.basis_left_sinfreq1, self.chromosome.basis_left_sinamp2,
+                      self.chromosome.basis_left_sinfreq2, self.chromosome.basis_left_sawtooth, self.chromosome.basis_left_expamp1,
+                      self.chromosome.basis_left_exppwer1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
+        right_basis = [self.chromosome.basis_right_const, self.chromosome.basis_right_poly1, self.chromosome.basis_right_poly2,
+                      self.chromosome.basis_right_poly3, self.chromosome.basis_right_poly4, self.chromosome.basis_right_poly5,
+                      self.chromosome.basis_right_sinamp1, self.chromosome.basis_right_sinfreq1, self.chromosome.basis_right_sinamp2,
+                      self.chromosome.basis_right_sinfreq2, self.chromosome.basis_right_sawtooth, self.chromosome.basis_right_expamp1,
+                      self.chromosome.basis_right_exppwer1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
+        self.left_basis, self.right_basis = left_basis, right_basis
+                      
 
     @staticmethod
     def get_state_vector_labels():

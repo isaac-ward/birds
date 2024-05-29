@@ -17,6 +17,7 @@ if __name__ == "__main__":
     
     # Make a creature
     # creature = VirtualCreature.random_init()
+    basis_vector = [0.0, ]
     creature = VirtualCreature(Chromosome([10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]))
 
     # Plot what it looks like at the start
