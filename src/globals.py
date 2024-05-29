@@ -14,6 +14,36 @@ CHROMOSOME_DEFINITION = [
     Gene("norm_COG_position", 0.0, 1.0),
     Gene("airfoil_armwing", 0.0, 1.0), #NOTE: Change later
     Gene("airfoil_handwing", 0.0, 1.0) #NOTE: Change later
+    Gene("basis_left_const", -1.0, 1.0),
+    Gene("basis_left_poly1", -1.0, 1.0),
+    Gene("basis_left_poly2", -1.0, 1.0),
+    Gene("basis_left_poly3", -1.0, 1.0),
+    Gene("basis_left_poly4", -1.0, 1.0),
+    Gene("basis_left_poly5", -1.0, 1.0),
+    Gene("basis_left_sinamp1", -1.0, 1.0),
+    Gene("basis_left_sinfreq1", -4.0, 4.0),
+    Gene("basis_left_sinamp2", -1.0, 1.0),
+    Gene("basis_left_sinfreq2", -4.0, 4.0),
+    Gene("basis_left_sawtooth", -4.0, 4.0),
+    Gene("basis_left_expamp1", -1.0, 1.0),
+    Gene("basis_left_exppwer1", -4.0, 4.0),
+    Gene("basis_left_expamp2", -1.0, 1.0),
+    Gene("basis_left_exppwr2", -4.0, 4.0),
+    Gene("basis_right_const", -1.0, 1.0),
+    Gene("basis_right_poly1", -1.0, 1.0),
+    Gene("basis_right_poly2", -1.0, 1.0),
+    Gene("basis_right_poly3", -1.0, 1.0),
+    Gene("basis_right_poly4", -1.0, 1.0),
+    Gene("basis_right_poly5", -1.0, 1.0),
+    Gene("basis_right_sinamp1", -1.0, 1.0),
+    Gene("basis_right_sinfreq1", -4.0, 4.0),
+    Gene("basis_right_sinamp2", -1.0, 1.0),
+    Gene("basis_right_sinfreq2", -4.0, 4.0),
+    Gene("basis_right_sawtooth", -4.0, 4.0),
+    Gene("basis_right_expamp1", -1.0, 1.0),
+    Gene("basis_right_exppwer1", -4.0, 4.0),
+    Gene("basis_right_expamp2", -1.0, 1.0),
+    Gene("basis_right_exppwr2", -4.0, 4.0)
 ]
 
 # Global aerodynamic parameters
