@@ -16,7 +16,8 @@ def solve_ga(
     num_generations,
     num_parents_per_generation,
     log_folder,
-    logging=True
+    logging=True,
+    log_video=False,
 ):
     # Will track the following
     fitness_scores_per_generation = []
@@ -77,7 +78,12 @@ def solve_ga(
 
             # And save the fittest individual as a string
             with open(f"{generation_folder}/fittest_individual.txt", "w") as f:
-                f.write(str(population[fittest_index]))
+                # Might get this:
+                # UnicodeEncodeError: 'charmap' codec can't encode character '\u03c9' in position 110: character maps to <undefined>
+                # Because of weird characters in the chromosome
+                string = str(population[fittest_index])
+                # So we'll just encode it to ascii
+                f.write(string.encode("ascii", "ignore").decode())
 
             # Log the distribution of the chromosomes in the population and where the fittest individual is
             visuals.plot_chromosome_distributions(
@@ -87,13 +93,14 @@ def solve_ga(
             )
 
             # Log an animation for the best individual
-            visuals.render_video_of_creature(
-                generation_folder, 
-                fittest_copy,
-                simulation_time_seconds=5.0,
-                dt=0.05,
-                fps=25
-            )
+            if log_video:
+                visuals.render_video_of_creature(
+                    generation_folder, 
+                    fittest_copy,
+                    simulation_time_seconds=5.0,
+                    dt=0.05,
+                    fps=25
+                )
 
         # Replace the old population with the new generation
         population = children
@@ -126,7 +133,9 @@ if __name__ == "__main__":
         population_size=16,
         num_generations=16,
         num_parents_per_generation=6,
-        log_folder=log_folder
+        log_folder=log_folder,
+        logging=True,
+        log_video=True,
     )
 
     # Print the best individual

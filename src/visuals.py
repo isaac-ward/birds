@@ -465,7 +465,7 @@ def render_3d_frame(
     plt.savefig(filepath, dpi=600)
     plt.close()
 
-def sequence_frames_to_video(filepaths_in, filepath_out, fps=30):
+def sequence_frames_to_video(filepaths_in, filepath_out, fps=25):
     # Use moviepy to accomplish this
     clip = mpy.ImageSequenceClip(filepaths_in, fps=fps)
     # Write the video
@@ -532,7 +532,7 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
 
     # Plot a video of the creature from the frames
     sequence_frames_to_video(
-        filepath,
+        filepaths,
         f"{log_folder}/video.mp4",
         fps=fps
     )
