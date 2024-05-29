@@ -24,6 +24,7 @@ class VirtualCreature:
 
         # TODO: Kusal please feel free to add other kinematic parameters
         self.get_mass_parameters()
+        self.get_basis_functions()
 
     @classmethod
     def random_init(cls):
@@ -120,14 +121,33 @@ class VirtualCreature:
         self.AR_aw, self.AR_hw, self.area_aw, self.area_hw = AR_aw, AR_hw, area_aw, area_hw
         self.COG_position, self.x_COL_position, self.z_COL_position = COG_position, x_COL_position, z_COL_position
         self.bird_mass, self.I_mat = bird_mass, I_mat
+    
+    def get_basis_functions(self):
+        left_basis = [self.chromosome.basis_left_const, self.chromosome.basis_left_poly1, self.chromosome.basis_left_poly2,
+                      self.chromosome.basis_left_poly3, self.chromosome.basis_left_poly4, self.chromosome.basis_left_poly5,
+                      self.chromosome.basis_left_sinamp1, self.chromosome.basis_left_sinfreq1, self.chromosome.basis_left_sinamp2,
+                      self.chromosome.basis_left_sinfreq2, self.chromosome.basis_left_sawtooth, self.chromosome.basis_left_expamp1,
+                      self.chromosome.basis_left_exppwer1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
+        right_basis = [self.chromosome.basis_right_const, self.chromosome.basis_right_poly1, self.chromosome.basis_right_poly2,
+                      self.chromosome.basis_right_poly3, self.chromosome.basis_right_poly4, self.chromosome.basis_right_poly5,
+                      self.chromosome.basis_right_sinamp1, self.chromosome.basis_right_sinfreq1, self.chromosome.basis_right_sinamp2,
+                      self.chromosome.basis_right_sinfreq2, self.chromosome.basis_right_sawtooth, self.chromosome.basis_right_expamp1,
+                      self.chromosome.basis_right_exppwer1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
+        self.left_basis, self.right_basis = left_basis, right_basis
 
-    @staticmethod
     def calc_wing_angle(self, t, wing_choice):
         if wing_choice == "left":
-            fdas
+            basis = self.left_basis
         elif wing_choice == "right":
-            fdasjkl
+            basis = self.right_basis
         else:
+            raise TypeError("Input either left or right for wing_choice")
+        
+        polynomial = basis[0] + basis[1]*t + basis[2]*t**2 + basis[3]*t**4 + basis[4]*t**4 + basis[5]*t**5
+        sinusoid = basis[6]*np.sin(basis[7]*t) + basis[8]*np.sin(basis[9]*t)
+        sawtooth = t % basis[10]
+        exponential = basis[11]*np.exp(basis[12]*t) + basis[13]*np.exp(basis[14]*t)
+        return polynomial + sinusoid + sawtooth + exponential
 
     @staticmethod
     def get_state_vector_labels():
@@ -188,8 +208,6 @@ class VirtualCreature:
         s += f"a  = {self.acceleration_xyz}\n"
         s += f"r  = {self.quaternions}\n"
         s += f"ω  = {self.angular_velocity}\n"
-        s += f"wa = {self.wing_angle_left}\n"
-        s += f"wa = {self.wing_angle_right}\n"
         s += "\n"
         # Write out the chromosome
         s += "chromosome:\n"

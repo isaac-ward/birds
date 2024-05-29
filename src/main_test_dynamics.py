@@ -17,8 +17,8 @@ if __name__ == "__main__":
     
     # Make a creature
     # creature = VirtualCreature.random_init()
-    basis_values_left = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    basis_values_left = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
     chromosome_values = [10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]
     creature = VirtualCreature(Chromosome(chromosome_values+basis_values_left+basis_values_right))
 
