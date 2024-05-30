@@ -87,6 +87,18 @@ class VirtualCreature:
         ])
         return vector
     
+    def get_dynamics_state_vector(self):
+        """
+        Returns the state used in dynamics of the virtual creature as a vector
+        """
+        vector = np.concatenate([
+            self.position_xyz,
+            self.velocity_xyz,
+            self.quaternions,
+            self.angular_velocity,
+        ])
+        return vector
+    
     def get_mass_parameters(self):
         # Get chromosome data
         wingspan, norm_wrist_position, wing_root_chord = self.chromosome.wingspan, self.chromosome.norm_wrist_position, self.chromosome.wing_root_chord

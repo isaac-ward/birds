@@ -30,8 +30,12 @@ def get_bird2world(quats):
                              [2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), q0**2 - q1**2 - q2**2 + q3**2]])
     return R_bird2world
 
+def norm_state_quats(state):
+    # quats in state[6:10]
+    state[6:10] *= 1/np.linalg.norm(state[6:10])
+    return state
 
-def forward_step(virtual_creature, t, dt):
+def euler_step(t, state, virtual_creature, dt):
     """
     Takes a virtual creature and updates its state by one step based on
     it's current state and the aerodynamic environment
@@ -40,15 +44,14 @@ def forward_step(virtual_creature, t, dt):
     """
 
     # Get wing angle
-    wa_left = virtual_creature.wing_angle_left
-    wa_right = virtual_creature.wing_angle_right
+    wa_left = virtual_creature.calc_wing_angle(t, "left")
+    wa_right = virtual_creature.calc_wing_angle(t, "right")
     
     # +x is forward, +y is up, +z is right
-    pos_world = virtual_creature.position_xyz
-    vel_world = virtual_creature.velocity_xyz
-    acc_world = virtual_creature.acceleration_xyz
-    quats = virtual_creature.quaternions
-    pqr = virtual_creature.angular_velocity
+    pos_world = state[0:3]
+    vel_world = state[3:6]
+    quats = state[6:10]
+    pqr = state[10:13]
 
     # Convert frome bird frame to world frame
     R_bird2world = get_bird2world(quats)
@@ -144,11 +147,53 @@ def forward_step(virtual_creature, t, dt):
                            [-q1, -q2, -q3]])
     quats_dot = R_pqr2quats @ pqr
 
-    # Update world position/angles
-    pos_world += dt*vel_world
-    quats += dt*quats_dot
-    quats *= 1/np.linalg.norm(quats)
+    # # Update world position/angles
+    # pos_world += dt*vel_world
+    # quats += dt*quats_dot
 
+    # Get stateDot
+    state_dot = np.concatenate([vel_world,
+                               acc_world,
+                               quats_dot,
+                               pqr_dot])
+    
+    return state_dot
+
+    
+    # virtual_creature.update_state(
+    #     position_xyz=pos_world,
+    #     velocity_xyz=vel_world,
+    #     acceleration_xyz=acc_world,
+    #     quaternions=quats,
+    #     angular_velocity=pqr,
+    #     wing_angle_left=wing_angle_left,
+    #     wing_angle_right=wing_angle_right,
+    # )
+
+def forward_step(virtual_creature, t, dt):
+    # Get current state [pos, vel, acceleration, quats, pqr]
+
+    state = virtual_creature.get_dynamics_state_vector()
+
+    k1 = euler_step(t, state, virtual_creature, dt)
+    k2 = euler_step(t+dt/2, norm_state_quats(state+(k1*dt/2)), virtual_creature, dt/2)
+    k3 = euler_step(t+dt/2, norm_state_quats(state+(k2*dt/2)), virtual_creature, dt/2)
+    k4 = euler_step(t+dt, norm_state_quats(state+(k3*dt)), virtual_creature, dt)
+
+    state_dot = k1/6 + k2/3 + k3/3 + k4/6
+    # state_dot = k1
+
+    new_state = state_dot * dt + state
+
+    # Extract state
+    pos_world = new_state[0:3]
+    vel_world = new_state[3:6]
+    acc_world = state_dot[3:6]
+    quats = new_state[6:10]
+    pqr = new_state[10:13]
+
+    quats *= 1/np.linalg.norm(quats)
+    
     # Finish by updating the state of the virtual creature
     wing_angle_left  = virtual_creature.calc_wing_angle(t+dt, "left")
     wing_angle_right = virtual_creature.calc_wing_angle(t+dt, "right")

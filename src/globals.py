@@ -53,8 +53,8 @@ CHROMOSOME_DEFINITION = [
 ]
 
 # Simulation parameters
-SIMULATION_T = 0.07
-DT = 0.005
+SIMULATION_T = 10
+DT = 0.0005
 
 # Global aerodynamic parameters
 AIR_DENSITY = 1.225 #kg/m^3
