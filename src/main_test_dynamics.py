@@ -48,7 +48,7 @@ if __name__ == "__main__":
     t = 0
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
-    render_video = True
+    render_video = False
     # Set FPS so that we get realtime playback
     playback_speed = 1.0
     fps = 1 / (dt * playback_speed)

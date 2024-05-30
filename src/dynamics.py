@@ -181,7 +181,6 @@ def forward_step(virtual_creature, t, dt):
     k4 = euler_step(t+dt, norm_state_quats(state+(k3*dt)), virtual_creature, dt)
 
     state_dot = k1/6 + k2/3 + k3/3 + k4/6
-    # state_dot = k1
 
     new_state = state_dot * dt + state
 
