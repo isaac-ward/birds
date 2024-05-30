@@ -2,6 +2,7 @@ import os
 import numpy as np
 import copy
 from tqdm import tqdm
+import random
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
@@ -19,6 +20,15 @@ def solve_ga(
     logging=True,
     log_video=False,
 ):
+    
+    # Set all the randoms for repeatability
+    random.seed(0)
+    np.random.seed(0)
+
+    # Can't have more parents than population size
+    if num_parents_per_generation > population_size:
+        raise ValueError(f"Can't have more parents {num_parents_per_generation} than population size {population_size}")
+
     # Will track the following
     fitness_scores_per_generation = []
 
@@ -56,6 +66,15 @@ def solve_ga(
             # Who was the mightiest of them all?
             fittest_index = np.argmax(fitness_scores)
 
+            # Save the fittest individual as a string
+            with open(f"{generation_folder}/fittest_individual.txt", "w") as f:
+                # Might get this:
+                # UnicodeEncodeError: 'charmap' codec can't encode character '\u03c9' in position 110: character maps to <undefined>
+                # Because of weird characters in the chromosome
+                string = str(population[fittest_index])
+                # So we'll just encode it to ascii
+                f.write(string.encode("ascii", "ignore").decode())
+
             # Log the fitness scores of the population as as box plot
             visuals.plot_fitnesses(
                 f"{generation_folder}/fitnesses.png",
@@ -76,15 +95,6 @@ def solve_ga(
                 fittest_copy
             )
 
-            # And save the fittest individual as a string
-            with open(f"{generation_folder}/fittest_individual.txt", "w") as f:
-                # Might get this:
-                # UnicodeEncodeError: 'charmap' codec can't encode character '\u03c9' in position 110: character maps to <undefined>
-                # Because of weird characters in the chromosome
-                string = str(population[fittest_index])
-                # So we'll just encode it to ascii
-                f.write(string.encode("ascii", "ignore").decode())
-
             # Log the distribution of the chromosomes in the population and where the fittest individual is
             visuals.plot_chromosome_distributions(
                 f"{generation_folder}/chromosome_distribution.png",
@@ -97,9 +107,6 @@ def solve_ga(
                 visuals.render_video_of_creature(
                     generation_folder, 
                     fittest_copy,
-                    simulation_time_seconds=5.0,
-                    dt=0.05,
-                    fps=25
                 )
 
         # Replace the old population with the new generation
@@ -130,9 +137,9 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     best_individual = solve_ga(
-        population_size=16,
-        num_generations=16,
-        num_parents_per_generation=6,
+        population_size=1,
+        num_generations=1,
+        num_parents_per_generation=1,
         log_folder=log_folder,
         logging=True,
         log_video=True,

@@ -20,7 +20,7 @@ class VirtualCreature:
         # A chromosome directly describes a virtual creature
         self.chromosome = chromosome
 
-        # TODO: Kusal please feel free to add other kinematic parameters
+        # Set the mass and basis parameters
         self.get_mass_parameters()
         self.get_basis_functions()
 
@@ -77,7 +77,7 @@ class VirtualCreature:
         """
         Returns the state of the virtual creature as a vector
         """
-        return np.concatenate([
+        vector = np.concatenate([
             self.position_xyz,
             self.velocity_xyz,
             self.acceleration_xyz,
@@ -85,6 +85,7 @@ class VirtualCreature:
             self.angular_velocity,
             [self.wing_angle_left, self.wing_angle_right]
         ])
+        return vector
     
     def get_mass_parameters(self):
         # Get chromosome data
@@ -159,9 +160,17 @@ class VirtualCreature:
         # Compute the value for the wing angle
         polynomial  = const + poly1*t + poly2*t**2 + poly3*t**3 + poly4*t**4 + poly5*t**5
         sinusoid    = sinamp1*np.sin(sinfreq1*t) + sinamp2*np.sin(sinfreq2*t)
-        sawtooth    = t % sawtooth
+        # TODO add rate of increase (e.g. X*sawtooth)
+        # sawtooth    = t % sawtooth
         exponential = expamp1*np.exp(exppwr1*t) + expamp2*np.exp(exppwr2*t)
-        return polynomial + sinusoid + sawtooth + exponential
+        total = polynomial + sinusoid + sawtooth + exponential
+
+        # Modulo it into the range [-pi, pi]
+        result = (total + np.pi) % (2*np.pi) - np.pi
+
+        # print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, saw: {sawtooth:.2f}, exp: {exponential:.2f}, total: {total:.2f}, result: {result:.2f}")
+
+        return result        
 
     @staticmethod
     def get_state_vector_labels():

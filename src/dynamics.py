@@ -31,7 +31,7 @@ def get_bird2world(quats):
     return R_bird2world
 
 
-def forward_step(virtual_creature, t, dt=1.0):
+def forward_step(virtual_creature, t, dt):
     """
     Takes a virtual creature and updates its state by one step based on
     it's current state and the aerodynamic environment
@@ -150,12 +150,15 @@ def forward_step(virtual_creature, t, dt=1.0):
     quats *= 1/np.linalg.norm(quats)
 
     # Finish by updating the state of the virtual creature
+    wing_angle_left  = virtual_creature.calc_wing_angle(t+dt, "left")
+    wing_angle_right = virtual_creature.calc_wing_angle(t+dt, "right")
+    
     virtual_creature.update_state(
         position_xyz=pos_world,
         velocity_xyz=vel_world,
         acceleration_xyz=acc_world,
         quaternions=quats,
         angular_velocity=pqr,
-        wing_angle_left=virtual_creature.calc_wing_angle(t + dt, "left"),
-        wing_angle_right=virtual_creature.calc_wing_angle(t + dt, "right")
+        wing_angle_left=wing_angle_left,
+        wing_angle_right=wing_angle_right,
     )

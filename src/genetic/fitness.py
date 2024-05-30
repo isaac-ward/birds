@@ -22,14 +22,12 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
         # Rollout a simulation
         # Simulation parameters
-        simulation_time_seconds = 0.5
-        dt = 0.05
         t = 0
-        num_steps = int(simulation_time_seconds / dt)
+        num_steps = int(globals.SIMULATION_T / globals.DT)
         for i in tqdm(range(num_steps), desc="Evaluating virtual creature's fitness", leave=False, disable=True):
             # Run the dynamics forward
-            forward_step(virtual_creature, t, dt=dt)
-            t += dt
+            forward_step(virtual_creature, t, dt=globals.DT)
+            t += globals.DT
 
             # Get the state vector and log
             state_vector = virtual_creature.get_state_vector()
@@ -42,6 +40,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
         # This is basically just a glide ratio
         final_x = state_trajectory[-1][0]
         final_z = state_trajectory[-1][2]
+        # A 10 here means that you're going 10x further forward than down
         glide_ratio = final_x / final_z
         fitness = glide_ratio
 

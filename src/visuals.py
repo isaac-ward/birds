@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import os
 import copy
 
@@ -10,7 +11,7 @@ from tqdm import tqdm
 
 from dynamics import forward_step
 from genetic.virtual_creature import VirtualCreature
-from globals import CHROMOSOME_DEFINITION
+import globals
 
 def plot_state_trajectory(filepath, state_trajectory, state_element_labels=VirtualCreature.get_state_vector_labels()):
     """
@@ -97,6 +98,8 @@ def plot_state_trajectory(filepath, state_trajectory, state_element_labels=Virtu
 
         # Get the state element as a vector and plot it
         state_element = [state[i] for state in state_trajectory]
+        print(state_element_labels[i])
+        print(state_element)
         axs[row, col].plot(state_element)
 
     # Save the plot
@@ -164,11 +167,11 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
     values_per_gene = {}
 
     # Get the chromosome values for each individual
-    for gene in range(len(CHROMOSOME_DEFINITION)):
-        name = CHROMOSOME_DEFINITION[gene].name
+    for gene in range(len(globals.CHROMOSOME_DEFINITION)):
+        name = globals.CHROMOSOME_DEFINITION[gene].name
         names.append(name)
-        min_values.append(CHROMOSOME_DEFINITION[gene].min_val)
-        max_values.append(CHROMOSOME_DEFINITION[gene].max_val)
+        min_values.append(globals.CHROMOSOME_DEFINITION[gene].min_val)
+        max_values.append(globals.CHROMOSOME_DEFINITION[gene].max_val)
         values_per_gene[name] = [getattr(creature.chromosome, name) for creature in population]
 
     # Here's how we're going to plot this. There will be 
@@ -209,8 +212,8 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
 
                 # Remove the xticks
                 axes[i * n_cols + j].set_xticks([])
-                # Make y ticks have 8 divisions from the gene min to max
-                axes[i * n_cols + j].set_yticks(np.linspace(min_values[gene_index], max_values[gene_index], 8))
+                # Make y ticks have 8 divisions from the gene min to max + some more
+                axes[i * n_cols + j].set_yticks(np.linspace(min_values[gene_index] * 1.25, max_values[gene_index] * 1.25, 8))
 
                 # Move to the next gene
                 gene_index += 1
@@ -283,20 +286,23 @@ def render_3d_frame(
     to fit the creature
     """
 
-    # Make the plot
-    fig = plt.figure(figsize=(10, 10))
+    # Make the plot and use gridspec to set up the following axes
+    fig = plt.figure(figsize=(12, 12))
+
+    # We'll have the 3d view large and on the left, taking up
+    # 3x3 grid cells, and then the ortho views on the right, 
+    # each taking up 1x1 for a total of 3x1
+    gs = gridspec.GridSpec(3, 4, figure=fig)
+
     # Make a 2x3 grid of 3d subplots
     axes = [
         # overall view
-        fig.add_subplot(231, projection='3d'), 
+        fig.add_subplot(gs[:,:3], projection='3d'), 
 
         # ortho views
-        fig.add_subplot(234, projection='3d'), 
-        fig.add_subplot(235, projection='3d'), 
-        fig.add_subplot(236, projection='3d'),
-
-        # close up view
-        fig.add_subplot(232, projection='3d'), 
+        fig.add_subplot(gs[0,3], projection='3d'), 
+        fig.add_subplot(gs[1,3], projection='3d'), 
+        fig.add_subplot(gs[2,3], projection='3d'), 
     ]
     axes[1].set_proj_type('ortho')
     axes[2].set_proj_type('ortho')
@@ -401,15 +407,20 @@ def render_3d_frame(
                 return extent
             extents = [modify_extent_if_too_close(extent) for extent in extents]
 
-            wingspan = extents[2]
+            # The biggest of the extents becomes the same for all extents
+            biggest_range_index = np.argmax([extent[1] - extent[0] for extent in extents])
+            extents = [
+                extents[biggest_range_index],
+                extents[biggest_range_index],
+                extents[biggest_range_index]
+            ]
 
             # Scale up bounds by scale factor
-            sf = 2
+            sf = 1.2
             extents = [ (sf * extent[0], sf * extent[1]) for extent in extents]
 
-            # Set z ticks to show wingspan
-            ax.set_zticks([0, *wingspan])
-            # Hide x and y axis ticks
+            # Set up the extents
+            ax.set_zticks([])
             ax.set_xticks([])
             ax.set_yticks([])
 
@@ -468,10 +479,10 @@ def render_3d_frame(
 def sequence_frames_to_video(filepaths_in, filepath_out, fps=25):
     # Use moviepy to accomplish this
     clip = mpy.ImageSequenceClip(filepaths_in, fps=fps)
-    # Write the video
-    clip.write_videofile(filepath_out, fps=fps)
+    # Write the videofilepaths_in
+    clip.write_videofile(filepaths_in, fps=fps, threads=math.ceil(os.cpu_count * 0.25), bitrate='2M')
 
-def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, fps=25):
+def render_video_of_creature(log_folder, creature, fps=25):
 
     # Make a copy of the creature and reset its state
     creature = copy.deepcopy(creature)
@@ -479,10 +490,10 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
     
     # Run the creature for some time
     t = 0
-    num_steps = int(simulation_time_seconds / dt)
+    num_steps = int(globals.SIMULATION_T / globals.DT)
     # Set FPS so that we get realtime playback
     playback_speed = 1.0
-    fps = 1 / (dt * playback_speed)
+    fps = 1 / (globals.DT * playback_speed)
     # Log the following for rendering frames
     creature_at_time = []
     running_state_trajectory = []
@@ -493,7 +504,7 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
     for i in tqdm(range(num_steps), desc="Running forward dynamics to generate video"):
 
         # Run the dynamics forward
-        forward_step(creature, t, dt=dt)
+        forward_step(creature, t, dt=globals.DT)
 
         # Get the state vector
         state_vector = creature.get_state_vector()
@@ -504,7 +515,7 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
         state_trajectory_at_time.append(copy.deepcopy(running_state_trajectory))
         times.append(t)
 
-        t += dt
+        t += globals.DT
 
     # Now we know the extents
     extents = [
@@ -512,8 +523,12 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
         (min([state[1] for state in running_state_trajectory]), max([state[1] for state in running_state_trajectory])),
         (min([state[2] for state in running_state_trajectory]), max([state[2] for state in running_state_trajectory])),
     ]
+    wingspan = creature.chromosome.wingspan
+    # If the wingspan is bigger than the y extent, then make the y extent bigger
+    if wingspan > (extents[1][1] - extents[1][0]):
+        extents[1] = (-wingspan/2, wingspan/2)
     # Add a buffer 
-    scale_factor = 1.2
+    scale_factor = 1.5
     extents = [ (scale_factor * extent[0], scale_factor * extent[1]) for extent in extents]
 
     # Do the rendering of the frames
@@ -526,7 +541,7 @@ def render_video_of_creature(log_folder, creature, simulation_time_seconds, dt, 
             extents=extents,
             past_3d_positions=state_trajectory_at_time[i],
             current_time_s=times[i],
-            total_time_s=simulation_time_seconds
+            total_time_s=globals.SIMULATION_T
         )
         filepaths.append(filepath)
 
