@@ -6,6 +6,7 @@ from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
 from genetic.fitness import evaluate_fitness, select_fittest_individuals
 from dynamics import forward_step
+import globals
 import visuals
 
 import utils
@@ -17,9 +18,15 @@ if __name__ == "__main__":
     
     # Make a creature
     # creature = VirtualCreature.random_init()
-    basis_values_left  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    chromosome_values  = [10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]
+    # basis_values_left  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    # basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+    # chromosome_values  = [10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]
+    basis_values_left  = [0.029844403873536818, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04834760828555451, 1.6701631275283892,
+                          -0.9120491359518188, 3.036171864189841, 2040162.833271346, 0.0, 0.0, 0.0, 0.0]
+    basis_values_right = [-0.7850548644623909, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5126442494375356, 0.7091120023358926,
+                          0.5064802391843537, -2.113326207154916, 2240999.800559975, 0.0, 0.0, 0.0, 0.0]
+    chromosome_values  = [3.6415060404047597, 0.7169803703727282, 0.10973692555460701, 0.629131815019235, 0.19182697787677994,
+                          0.5054903667898508, 0.6894825293446284, 0.17814109395817931]
     creature = VirtualCreature(Chromosome(chromosome_values+basis_values_left+basis_values_right))
 
     # Plot what it looks like at the start
@@ -36,12 +43,12 @@ if __name__ == "__main__":
 
     # Run the creature for some time
     # Simulation parameters
-    simulation_time_seconds = 7.5
-    dt = 0.1
+    simulation_time_seconds = globals.SIMULATION_T
+    dt = globals.DT
     t = 0
     num_steps = int(simulation_time_seconds / dt)
     # Video parameters
-    render_video = True
+    render_video = False
     # Set FPS so that we get realtime playback
     playback_speed = 1.0
     fps = 1 / (dt * playback_speed)
@@ -50,10 +57,11 @@ if __name__ == "__main__":
     for i in tqdm(range(num_steps), desc="Running forward dynamics"):
 
         # Run the dynamics forward
-        t = forward_step(creature, t, dt=dt)
+        forward_step(creature, t, dt=dt)
+        t += dt
 
         # Get the state vector and log
-        state_vector = creature.get_state_vector(t)
+        state_vector = creature.get_state_vector()
         state_trajectory.append(state_vector)
 
         # Plot every frame so that we can see what's going on
