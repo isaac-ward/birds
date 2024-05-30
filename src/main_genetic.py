@@ -137,7 +137,7 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     best_individual = solve_ga(
-        population_size=1,
+        population_size=32,
         num_generations=1,
         num_parents_per_generation=1,
         log_folder=log_folder,

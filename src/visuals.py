@@ -98,8 +98,8 @@ def plot_state_trajectory(filepath, state_trajectory, state_element_labels=Virtu
 
         # Get the state element as a vector and plot it
         state_element = [state[i] for state in state_trajectory]
-        print(state_element_labels[i])
-        print(state_element)
+        # print(state_element_labels[i])
+        # print(state_element)
         axs[row, col].plot(state_element)
 
     # Save the plot
@@ -501,7 +501,7 @@ def render_video_of_creature(log_folder, creature, fps=25):
     times = []
 
     # Do the simulation
-    for i in tqdm(range(num_steps), desc="Running forward dynamics to generate video"):
+    for i in tqdm(range(num_steps), desc=f"Running forward dynamics to generate video, num_steps={num_steps}"):
 
         # Run the dynamics forward
         forward_step(creature, t, dt=globals.DT)

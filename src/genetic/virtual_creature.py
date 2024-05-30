@@ -185,7 +185,8 @@ class VirtualCreature:
             "px (+forward, -backward)", "py (+right, -left)", "pz (+down, -up)",
             "vx", "vy", "vz",
             "ax", "ay", "az",
-            "rx (roll)", "ry (yaw)", "rz (pitch)",
+            #"rx (roll)", "ry (yaw)", "rz (pitch)",
+            "qx", "qy", "qz", "qw",
             "ωx", "ωy", "ωz",
             "wing_angle_left", "wing_angle_right"
         ]
