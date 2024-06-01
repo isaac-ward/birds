@@ -1,5 +1,6 @@
 import numpy as np 
 import random
+import copy
 
 import globals
 from genetic.chromosome import Chromosome
@@ -177,8 +178,14 @@ class VirtualCreature:
         exponential = expamp1*np.exp(exppwr1*t) + expamp2*np.exp(exppwr2*t)
         total = polynomial + sinusoid + sawtooth + exponential
 
+        # TODO this can allow discontinuities
+
         # Modulo it into the range [-pi, pi]
         result = (total + np.pi) % (2*np.pi) - np.pi
+
+        # Now scale it into the range [-25deg, +25deg]
+        rad25deg = 25 * np.pi / 180
+        result = result * rad25deg / np.pi
 
         # print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, saw: {sawtooth:.2f}, exp: {exponential:.2f}, total: {total:.2f}, result: {result:.2f}")
 
@@ -217,7 +224,7 @@ class VirtualCreature:
         with a given mutation rate
         """
         #Gaussian mutation by adding zero mean Gaussian Noise (Alg 9.9)
-        return VirtualCreature(self.chromosome.mutate())
+        return VirtualCreature(self.chromosome)
 
     def __str__(self):
         """
@@ -358,3 +365,7 @@ class VirtualCreature:
 
         return vertices, faces
     
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, state):
+        self.__dict__.update(state)

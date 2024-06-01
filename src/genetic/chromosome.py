@@ -1,5 +1,8 @@
 import numpy as np 
 import random
+import pickle
+import copy
+
 class Gene:
     """
     Helper class to store a named gene and explicitly define
@@ -10,8 +13,25 @@ class Gene:
         Allows gene to be initialized with specific values
         """
         self.name = name
+        # Inclusive
         self.min_val = min_val
         self.max_val = max_val
+    
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+    
+class GeneDiscrete(Gene):
+    """
+    A subclass of Gene that only allows discrete values inclusive
+    of the min and max values
+    """
+    def __init__(self, name, min_val, max_val):
+        # Inclusive
+        super().__init__(name, min_val, max_val)
+        assert isinstance(min_val, int) and isinstance(max_val, int), "Discrete genes must have integer min and max values"
+
 
 from globals import CHROMOSOME_DEFINITION
 
@@ -36,6 +56,11 @@ class Chromosome:
         for i, gene in enumerate(CHROMOSOME_DEFINITION):
             assert gene.min_val <= vector[i] <= gene.max_val, f"Gene {gene.name} out of bounds {gene.min_val} <= {vector[i]} <= {gene.max_val}"
 
+        # And that the discrete genes are integers
+        for i, gene in enumerate(CHROMOSOME_DEFINITION):
+            if isinstance(gene, GeneDiscrete):
+                assert isinstance(vector[i], int), f"Gene {gene.name} must be an integer"
+
         # Assign the genes to named attributes
         for i, gene in enumerate(CHROMOSOME_DEFINITION):
             setattr(self, gene.name, vector[i])
@@ -45,10 +70,12 @@ class Chromosome:
         """
         Initializes a chromosome with random values within feasible ranges
         """
-        vector = np.array([
-            np.random.uniform(gene.min_val, gene.max_val)
-            for gene in CHROMOSOME_DEFINITION
-        ])
+        vector = []
+        for gene in CHROMOSOME_DEFINITION:
+            if isinstance(gene, GeneDiscrete):
+                vector.append(np.random.randint(gene.min_val, gene.max_val + 1))
+            else:
+                vector.append(np.random.uniform(gene.min_val, gene.max_val))
         return cls(vector)
     
     def __str__(self):
@@ -64,14 +91,23 @@ class Chromosome:
         # Single point crossover (i.e., the first part of one chromosome is combined with the second part of the other)
         crossover_point = random.randint(0, len(CHROMOSOME_DEFINITION) - 1)
         new_vector = [getattr(self, gene.name) if i <= crossover_point else getattr(other, gene.name) for i, gene in enumerate(CHROMOSOME_DEFINITION)]
-        return Chromosome(np.array(new_vector))
+        return Chromosome(new_vector)
     
     def mutate(self):
-        # Compute the sigma for each gene based on it's valid range
-        sigmas = np.array([(gene.max_val - gene.min_val) / 8 for gene in CHROMOSOME_DEFINITION])
+        # If it's discrete we can just randomly select a new value
+        new_vector = []
+        for gene in CHROMOSOME_DEFINITION:
+            if isinstance(gene, GeneDiscrete):
+                new_vector.append(int(np.random.randint(gene.min_val, gene.max_val + 1)))
+            else:
+                # Otherwise we can just add some Gaussian noise
+                sigma = 0.15 * (gene.max_val - gene.min_val)
+                new_vector.append(np.clip(getattr(self, gene.name) + np.random.normal(0, sigma), gene.min_val, gene.max_val))
 
-        # Mutate each gene attribute using Gaussian noise
-        for i, gene in enumerate(CHROMOSOME_DEFINITION):
-            mutated_value = np.clip(getattr(self, gene.name) + np.random.normal(0, sigmas[i]), gene.min_val, gene.max_val)
-            setattr(self, gene.name, mutated_value)
-        return self
+        # Return a new chromosome with the mutated values
+        return Chromosome(np.array(new_vector))
+
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, state):
+        self.__dict__.update(state)

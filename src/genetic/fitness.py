@@ -17,6 +17,15 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
     # We'll log all this
     state_trajectory = []
 
+    def valid_state_check(state_trajectory):
+        # If any of the values are >> 1000, then
+        # the simulation has failed and the creature 
+        # should be given a fitness of -inf
+        for state in state_trajectory:
+            if np.any(np.abs(state) > 1000000):
+                return False
+        return True
+
     # forward_step(virtual_creature)
     if test_mode == 1:
 
@@ -33,16 +42,28 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             state_vector = virtual_creature.get_state_vector()
             state_trajectory.append(state_vector)
 
-        # Now evaluate the fitness based on the trajectory
-        # A fitter creature will have:
-        # - gone forward more in the +x direction
-        # - gone down less in the +z direction
-        # This is basically just a glide ratio
-        final_x = state_trajectory[-1][0]
-        final_z = state_trajectory[-1][2]
-        # A 10 here means that you're going 10x further forward than down
-        glide_ratio = final_x / final_z
-        fitness = glide_ratio
+        if not valid_state_check(state_trajectory):
+            fitness = -np.inf
+        else:
+            # Now evaluate the fitness based on the trajectory
+            # A fitter creature will have:
+            # - gone forward more in the +x direction
+            # - gone down less in the +z direction
+            # - goes straight
+
+            # This is basically just a glide ratio
+            # This should be positive
+            forward_distance = state_trajectory[-1][0] - state_trajectory[0][0]
+            # This should be positive
+            downward_distance = state_trajectory[-1][2] - state_trajectory[0][2]
+
+            # Penalize for going off course (in the y direction)
+            # This will be >= 0
+            average_lateral_divergence = sum([abs(state[1]) for state in state_trajectory]) / len(state_trajectory)
+
+            # Fitness is a mix of these, accounting for positive/negative. Note that
+            # we are trying to maximize this!
+            fitness = 50*forward_distance - 50*downward_distance - average_lateral_divergence
 
     elif test_mode == 2:
         # Define the waypoints as a list of tuples (x, y, z)
@@ -79,6 +100,8 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
     else:
         raise ValueError(f"Unsupported fitness test mode '{test_mode}'")
     
+    # We may want additional logging data, in
+    # which case we return more than just the fitness
     if return_logging_data:
         return fitness, state_trajectory
     else:
@@ -98,9 +121,9 @@ def select_fittest_individuals(population, fitness_scores, num_parents, method):
     # fitness score for each VirtualCreature object in population (type: floats)
     parents = []
     if method=="truncation":
-        sorted_indices = np.argsort(fitness_scores)[::-1]
-        top_parents = sorted_indices[:num_parents]
-        parents = [population[np.random.choice(top_parents)] for _ in range(num_parents)]
+        sorted_indices = np.argsort(fitness_scores)[::-1] # Highest to lowest
+        top_parents = sorted_indices[:num_parents] # The highest fitness scores
+        parents = [population[np.random.choice(top_parents)] for _ in range(num_parents)] # The best of those
     elif method=="tournament":
         subset_indices = np.random.choice(len(fitness_scores),num_parents,replace=False)
         best_index = subset_indices[np.argmin(fitness_scores[subset_indices])]

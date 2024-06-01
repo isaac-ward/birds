@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import os
 import copy
+import pickle
 
 import moviepy.editor as mpy
 from tqdm import tqdm
@@ -121,12 +122,15 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
     x = list(range(num_generations))
     worst_fitnesses = [min(fitness_scores) for fitness_scores in fitness_scores_per_generation]
     best_fitnesses = [max(fitness_scores) for fitness_scores in fitness_scores_per_generation]
+    # If the best/worst are -inf, then forget them
+    worst_fitnesses = [fitness if fitness != -np.inf else np.nan for fitness in worst_fitnesses]
+    best_fitnesses  = [fitness if fitness != -np.inf else np.nan for fitness in best_fitnesses]
+    # Average fitness
     average_fitnesses = [np.mean(fitness_scores) for fitness_scores in fitness_scores_per_generation]
 
-    # Plot the fitness scores
-    ax.plot(x, worst_fitnesses, color='red', label='worst')
-    ax.plot(x, best_fitnesses, color='green', label='best')
-    ax.plot(x, average_fitnesses, color='blue', label='average')
+    # Plot the fitness scores as a fillebetween around the average fitness
+    ax.fill_between(x, worst_fitnesses, best_fitnesses, color='blue', alpha=0.3, label='best/worst fitness')
+    ax.plot(x, average_fitnesses, color='blue', label='average fitness')
 
     # Add a legend
     ax.legend()
@@ -138,15 +142,23 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
 
 def plot_fitnesses(filepath, fitness_scores):
     """
-    As a box plot, plot the fitness scores of the population
+    Plot the fitness scores of the population
     """
 
     # Create the plot
     fig = plt.figure(figsize=(6, 6), dpi=600)
     ax = fig.add_subplot(111)
 
-    # Plot the fitness scores as a box plot
-    ax.boxplot(fitness_scores)
+    # Ignore -inf values
+    fitness_scores = [fitness for fitness in fitness_scores if fitness != -np.inf]
+
+    # Fitnesses may be widely spread, with few overlapping, so
+    # a good choice of plot is a ...
+    # histogram of fitness scores
+    ax.hist(fitness_scores, bins=30, edgecolor='black', alpha=0.7)
+    ax.set_title('Distribution of Fitness Scores')
+    ax.set_xlabel('Fitness')
+    ax.set_ylabel('Frequency')
 
     # Save the plot
     plt.tight_layout()
@@ -199,7 +211,10 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
                 # Plot the box plot
                 axes[i * n_cols + j].boxplot(values)
                 axes[i * n_cols + j].set_title(gene_name)
-                axes[i * n_cols + j].set_ylim(min_values[gene_index], max_values[gene_index])
+                offset = (max_values[gene_index] - min_values[gene_index]) / 4
+                low = min_values[gene_index] - offset
+                high = max_values[gene_index] + offset
+                axes[i * n_cols + j].set_ylim(low, high)
                 # Add a grid
                 axes[i * n_cols + j].grid(True)
 
@@ -212,8 +227,8 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
 
                 # Remove the xticks
                 axes[i * n_cols + j].set_xticks([])
-                # Make y ticks have 8 divisions from the gene min to max + some more
-                axes[i * n_cols + j].set_yticks(np.linspace(min_values[gene_index] * 1.25, max_values[gene_index] * 1.25, 8))
+                # Make y ticks have 8 divisions from the gene (offset) min to max + some more
+                axes[i * n_cols + j].set_yticks(np.linspace(low, high, 8))
 
                 # Move to the next gene
                 gene_index += 1
@@ -262,6 +277,7 @@ def get_3d_rotation_matrix(quaternion):
 def render_3d_frame(
     filepath, 
     virtual_creature, 
+    override_vertices=[],
     render_as_mesh=True,
     if_mesh_render_verts=True,
     if_mesh_render_cog=True,
@@ -287,22 +303,25 @@ def render_3d_frame(
     """
 
     # Make the plot and use gridspec to set up the following axes
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(12, 10))
 
     # We'll have the 3d view large and on the left, taking up
     # 3x3 grid cells, and then the ortho views on the right, 
     # each taking up 1x1 for a total of 3x1
-    gs = gridspec.GridSpec(3, 4, figure=fig)
+    gs = gridspec.GridSpec(4, 4, figure=fig)
 
     # Make a 2x3 grid of 3d subplots
     axes = [
         # overall view
-        fig.add_subplot(gs[:,:3], projection='3d'), 
+        fig.add_subplot(gs[:3,:], projection='3d'), 
 
         # ortho views
-        fig.add_subplot(gs[0,3], projection='3d'), 
-        fig.add_subplot(gs[1,3], projection='3d'), 
-        fig.add_subplot(gs[2,3], projection='3d'), 
+        fig.add_subplot(gs[3,1], projection='3d'), 
+        fig.add_subplot(gs[3,2], projection='3d'), 
+        fig.add_subplot(gs[3,3], projection='3d'), 
+
+        # closeup view
+        fig.add_subplot(gs[3,0], projection='3d'),
     ]
     axes[1].set_proj_type('ortho')
     axes[2].set_proj_type('ortho')
@@ -312,23 +331,33 @@ def render_3d_frame(
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
     # Render to a given axes
-    def render_to_axes(ax, azim, elev, roll, zoom, hide_labels):
+    def render_to_axes(ax, azim, elev, roll, zoom, hide_labels, closeup, tracking):
+        """
+        Closeup means we want to render the creature close up, without any transformations or past positions
+        Tracking means we want to render the creature with the past positions just focused in on the creature
+        """
         nonlocal extents
-
-        # We might rendedr as a mesh
-        if render_as_mesh:
         
-            # Get the vertices and faces and show in matplotlib
-            vertices, faces = virtual_creature.get_mesh_verts_and_faces(current_time_s)
+        # Get the vertices and faces and show in matplotlib
+        vertices, faces = virtual_creature.get_mesh_verts_and_faces(current_time_s)
+        if len(override_vertices) > 0:
+            vertices = override_vertices
 
-            # Need to apply the translation and rotation to the vertices
-            # before rendering. Position is x,y,z and rotation is euler
-            # angles in radians about x,y,z axes
-            position = virtual_creature.position_xyz
-            rotation = virtual_creature.quaternions
+        # Need to apply the translation and rotation to the vertices
+        # before rendering. Position is x,y,z and rotation is euler
+        # angles in radians about x,y,z axes
+        position = virtual_creature.position_xyz
+        rotation = virtual_creature.quaternions
+        # For the close up we don't want to do the transformation
+        if closeup:
+            transformation = np.eye(4)
+        else:
             transformation = get_3d_translation_matrix(position) @ get_3d_rotation_matrix(rotation)
-            # Do the transformation in 4d and then back to 3d
-            vertices = [(transformation @ np.array([*v, 1]))[:3] for v in vertices]
+        # Do the transformation in 4d and then back to 3d
+        vertices = [(transformation @ np.array([*v, 1]))[:3] for v in vertices]
+
+        # We might render as a mesh
+        if render_as_mesh:            
 
             # Render the mesh with trisurf
             ax.plot_trisurf(
@@ -393,7 +422,7 @@ def render_3d_frame(
 
         # Set axis limits so that everything is visible, unless we
         # were given extents in which case just use those
-        if extents == []:
+        if extents == [] or closeup or tracking:
             extents = [
                 (min([v[0] for v in vertices]), max([v[0] for v in vertices])),
                 (min([v[1] for v in vertices]), max([v[1] for v in vertices])),
@@ -401,28 +430,31 @@ def render_3d_frame(
             ]
 
             def modify_extent_if_too_close(extent):
-                epsilon = 0.1
+                epsilon = 0.05
                 if abs(extent[0] - extent[1]) < epsilon:
                     return (extent[0] - epsilon, extent[1] + epsilon)
                 return extent
             extents = [modify_extent_if_too_close(extent) for extent in extents]
 
-            # The biggest of the extents becomes the same for all extents
+            # The biggest of the extents becomes the size for all extents so that we have 
+            # a cube, 1:1:1 aspect ratio
             biggest_range_index = np.argmax([extent[1] - extent[0] for extent in extents])
-            extents = [
-                extents[biggest_range_index],
-                extents[biggest_range_index],
-                extents[biggest_range_index]
-            ]
+            offset_from_center = 0.5 * (extents[biggest_range_index][1] - extents[biggest_range_index][0])
 
             # Scale up bounds by scale factor
-            sf = 1.2
-            extents = [ (sf * extent[0], sf * extent[1]) for extent in extents]
+            if tracking:
+                sf = 2
+            else:
+                sf = 1.2
+            offset_from_center *= sf            
+
+            extent_means = [0.5 * (extent[1] + extent[0]) for extent in extents]
+            extents = [(mean - offset_from_center, mean + offset_from_center) for mean in extent_means]
 
             # Set up the extents
-            ax.set_zticks([])
-            ax.set_xticks([])
-            ax.set_yticks([])
+            # ax.set_zticks([])
+            # ax.set_xticks([])
+            # ax.set_yticks([])
 
         # Set the bounding box for the render
         ax.set_xlim3d(*extents[0])
@@ -438,7 +470,7 @@ def render_3d_frame(
         ax.view_init(azim=azim, elev=elev, roll=roll)
 
         # Render previous positions as a line if given
-        if len(past_3d_positions) > 0:
+        if len(past_3d_positions) > 0 and not closeup:
             # Get the x,y,z components of the past positions
             x = [p[0] for p in past_3d_positions]
             y = [p[1] for p in past_3d_positions]
@@ -448,19 +480,22 @@ def render_3d_frame(
             ax.plot(x, y, z, color='black', alpha=0.5)
 
     # Render to the axes
-    render_to_axes(axes[0], azim=-115, elev=-165, roll=0, zoom=1.1, hide_labels=False)
+    render_to_axes(axes[0], azim=-115, elev=-165, roll=0, zoom=1.1, hide_labels=False, closeup=False, tracking=False)
     # Behind view
-    render_to_axes(axes[1], azim=0, elev=180, roll=0, zoom=1.5, hide_labels=True)
+    render_to_axes(axes[1], azim=0, elev=180, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
     # Right side view
-    render_to_axes(axes[2], azim=-90, elev=180, roll=0, zoom=1.5, hide_labels=True)
+    render_to_axes(axes[2], azim=-90, elev=180, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
     # Top down
-    render_to_axes(axes[3], azim=-90, elev=-90, roll=0, zoom=1.5, hide_labels=True)
+    render_to_axes(axes[3], azim=-90, elev=-90, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
+    # Close up view
+    render_to_axes(axes[4], azim=-115, elev=-165, roll=0, zoom=1.1, hide_labels=True, closeup=True, tracking=False)
 
     # Set titles
     axes[0].set_title("3D view")
     axes[1].set_title("Behind view")
     axes[2].set_title("Right side view")
     axes[3].set_title("Top down view")
+    axes[4].set_title("Close up view")
 
     # Render the time information if given in the top left
     if current_time_s != -1 and total_time_s != -1:
@@ -480,20 +515,20 @@ def sequence_frames_to_video(filepaths_in, filepath_out, fps=25):
     # Use moviepy to accomplish this
     clip = mpy.ImageSequenceClip(filepaths_in, fps=fps)
     # Write the videofilepaths_in
-    clip.write_videofile(filepaths_in, fps=fps, threads=math.ceil(os.cpu_count * 0.25), bitrate='2M')
+    clip.write_videofile(filepath_out, fps=int(fps), threads=math.ceil(os.cpu_count() * 0.25), bitrate='2M')
 
-def render_video_of_creature(log_folder, creature, fps=25):
-
+def render_simulation_of_creature(log_folder, creature, fps=25):
     # Make a copy of the creature and reset its state
     creature = copy.deepcopy(creature)
     creature.reset_state()
     
     # Run the creature for some time
     t = 0
-    num_steps = int(globals.SIMULATION_T / globals.DT)
-    # Set FPS so that we get realtime playback
-    playback_speed = 1.0
-    fps = 1 / (globals.DT * playback_speed)
+    fps = 10
+    # We don't want to render every step of the simulation
+    # so we instead playback at this target fps^
+    num_sim_steps = int(globals.SIMULATION_T / globals.DT)
+    num_render_steps = int(globals.SIMULATION_T * fps)
     # Log the following for rendering frames
     creature_at_time = []
     running_state_trajectory = []
@@ -501,7 +536,8 @@ def render_video_of_creature(log_folder, creature, fps=25):
     times = []
 
     # Do the simulation
-    for i in tqdm(range(num_steps), desc=f"Running forward dynamics to generate video, num_steps={num_steps}"):
+    # TODO this should come from fitness.py
+    for i in tqdm(range(num_sim_steps), desc=f"Running forward dynamics to generate video, num_sim_steps={num_sim_steps}"):
 
         # Run the dynamics forward
         forward_step(creature, t, dt=globals.DT)
@@ -533,8 +569,10 @@ def render_video_of_creature(log_folder, creature, fps=25):
 
     # Do the rendering of the frames
     filepaths = []
-    for i in tqdm(range(num_steps), desc="Rendering frames for video"):
-        filepath = f"{log_folder}/frames/{i}.png"
+    for r in tqdm(range(num_render_steps), desc=f"Rendering frames for video, num_render_steps={num_render_steps}"):
+        # Get the closest index i in the simulation to the time i / fps
+        i = int(r * num_sim_steps / num_render_steps)
+        filepath = f"{log_folder}/frames_simulation/{r}.png"
         render_3d_frame(
             filepath,
             creature_at_time[i],
@@ -548,6 +586,147 @@ def render_video_of_creature(log_folder, creature, fps=25):
     # Plot a video of the creature from the frames
     sequence_frames_to_video(
         filepaths,
-        f"{log_folder}/video.mp4",
+        f"{log_folder}/simulation.mp4",
+        fps=fps
+    )
+
+def render_evolution_of_creatures(log_folder, filepaths_virtual_creatures):
+    """
+    Given a list of filepaths to virtual creature pickles, 
+    render the evolution of the creatures (i.e., render a video
+    of the creatures evolving over time)
+
+    This will work like so:
+    - Load the virtual creatures from the filepaths as keyframes
+    - Interpolate between the keyframes to get the inbetween frames
+    - Render the frames to a video at fps=25
+    """
+
+    # Load the pickle files
+    creatures = []
+    for filepath in filepaths_virtual_creatures:
+        with open(filepath, 'rb') as f:
+            creatures.append(pickle.load(f))
+    # Reset the state of the creatures,
+    # And remove any rotational offset
+    for creature in creatures:
+        creature.reset_state()
+        creature.update_state(
+            position_xyz=np.zeros(3),
+            velocity_xyz=np.array([10.0, 0.0, 0.0]),
+            acceleration_xyz=np.zeros(3),
+            quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
+            angular_velocity=np.zeros(3),
+            # This is key to making nice plots
+            wing_angle_left=0,
+            wing_angle_right=0
+        )
+    
+    # Get the vertices and faces for each creature
+    # At the keyframes
+    vertices_list = []
+    faces_list = []
+    for creature in creatures:
+        # Get what the creature looks like at time 0
+        vertices, faces = creature.get_mesh_verts_and_faces(0)
+        vertices_list.append(vertices)
+        faces_list.append(faces)
+    
+    # We can just use the same faces for all creatures
+    # because they won't change
+    faces = faces_list[0]
+
+    # Each vertices list is a list of vertices for each creature
+    # We want to interpolate between these
+    def interpolate_vertices(v1, v2, t):
+        """
+        Interpolate between two sets of vertices
+        t is a value between 0 and 1
+        """
+        v1 = np.array(v1)
+        v2 = np.array(v2)
+        return (1 - t) * v1 + t * v2
+
+    # Now how many frames do we want?
+    video_length_s_per_creature = 1
+    fps = 25
+    num_frames_per_creature = int(video_length_s_per_creature * fps)
+
+    # Get the max wingspans from the creatures
+    max_y_extent = max([max([v[1] for v in vertices]) for vertices in vertices_list])
+    min_y_extent = min([min([v[1] for v in vertices]) for vertices in vertices_list])
+    middle_y = 0.5 * (max_y_extent + min_y_extent)
+    range_y = max_y_extent - min_y_extent
+    extent = (middle_y - 1.5 * range_y, middle_y + 1.5 * range_y)
+
+    # Create the frames
+    frame_filepaths = []
+    for i in tqdm(range(len(creatures) - 1), desc="Rendering frames for evolution video"):
+        initial_vertices = vertices_list[i]
+        final_vertices   = vertices_list[i + 1]
+        for j in range(num_frames_per_creature):
+            t = j / num_frames_per_creature
+            vertices = interpolate_vertices(initial_vertices, final_vertices, t)
+            filepath = f"{log_folder}/frames_evolution/{i*num_frames_per_creature + j}.png"
+            render_3d_frame(
+                filepath,
+                creature,
+                override_vertices=vertices,
+                render_as_mesh=True,
+                if_mesh_render_verts=False,
+                if_mesh_render_cog=False,
+                extents=[extent, extent, extent],
+                past_3d_positions=[],
+                current_time_s=-1,
+                total_time_s=-1,
+            )
+            frame_filepaths.append(filepath)
+
+
+    # for i in tqdm(range(num_frames), desc="Rendering frames for evolution video"):
+    #     # When i is 0, we want the first creature and second creature
+    #     # when i is num_frames, we want the second to last and last creature
+    #     t = i / num_frames
+
+    #     # Get the time
+    #     t = i / num_frames
+    #     # Get the creature index
+    #     creature_index = int(t * len(creatures))
+    #     # Get the creature
+    #     creature = creatures[creature_index]
+    #     # Get the vertices
+    #     vertices1 = vertices_list[creature_index]
+    #     vertices2 = vertices_list[(creature_index + 1) % len(creatures)]
+    #     # Interpolate
+    #     vertices = interpolate_vertices(vertices1, vertices2, t)
+    #     # Render the frame
+    #     filepath = f"{log_folder}/frames_evolution/{i}.png"
+    #     render_3d_frame(
+    #         filepath,
+    #         creature,
+    #         override_vertices=vertices,
+    #         render_as_mesh=True,
+    #         if_mesh_render_verts=False,
+    #         if_mesh_render_cog=False,
+    #         extents=[(-5, 5), (-5, 5), (-5, 5)],
+    #         past_3d_positions=[],
+    #         current_time_s=-1,
+    #         total_time_s=-1,
+    #     )
+    #     frame_filepaths.append(filepath)
+
+    # Pausea t the start and end for 1 second
+    num_frames_pause = int(fps)
+    # Copy the first frame
+    for i in range(num_frames_pause):
+        frame_filepaths.insert(0, frame_filepaths[0])
+    # Copy the last frame
+    for i in range(num_frames_pause):
+        frame_filepaths.append(frame_filepaths[-1])
+
+    # Create the video
+    sequence_frames_to_video(
+        frame_filepaths,
+        f"{log_folder}/evolution.mp4",
         fps=fps
     )

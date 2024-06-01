@@ -1,0 +1,57 @@
+{
+    "os": "Windows-11-10.0.26227-SP0",
+    "python": "3.12.3",
+    "heartbeatAt": "2024-05-31T20:14:43.204698",
+    "startedAt": "2024-05-31T20:14:42.197716",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Users\\moose\\Desktop\\dev\\birds\\src\\wandb_logging.py",
+    "codePathLocal": "src\\wandb_logging.py",
+    "codePath": "src\\wandb_logging.py",
+    "git": {
+        "remote": "https://github.com/isaac-ward/birds",
+        "commit": "6db7b8fd687c09d2c5cdaab1a9f2004b57114703"
+    },
+    "email": "isaacronaldward@gmail.com",
+    "root": "C:/Users/moose/Desktop/dev/birds",
+    "host": "moose",
+    "username": "moose",
+    "executable": "C:\\Users\\moose\\miniconda3\\envs\\birds\\python.exe",
+    "cpu_count": 32,
+    "cpu_count_logical": 64,
+    "cpu_freq": {
+        "current": 3693.0,
+        "min": 0.0,
+        "max": 3693.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3693.0,
+            "min": 0.0,
+            "max": 3693.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 920.1540069580078,
+            "used": 822.3553276062012
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 2,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        },
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        }
+    ],
+    "memory": {
+        "total": 127.89585494995117
+    }
+}

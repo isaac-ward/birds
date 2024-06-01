@@ -34,3 +34,8 @@ For removing all logs but keeping the .gitkeep:
 ```
 rm -rf logs/*
 ```
+
+If you have wandb installed and if ```keys_template.py``` has been filled out and renamed to ```keys.py```, you can run the following to log the latest ```main_genetic.py``` output run to wandb:
+```python
+python wandb_logging.py
+```

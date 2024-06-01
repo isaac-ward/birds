@@ -58,11 +58,16 @@ def euler_step(t, state, virtual_creature, dt):
     
     uvw = R_bird2world.T @ vel_world
 
-    # Pull chromosome data
-    airfoil_armwing, airfoil_handwing = virtual_creature.chromosome.airfoil_armwing, virtual_creature.chromosome.airfoil_handwing
+    # Pull simulation constants
     rho_inf, rho_bird, g = globals.AIR_DENSITY, globals.BIRD_DENSITY, globals.GRAVITY
 
-    airfoil_armwing, airfoil_handwing = "NACA 0012", "NACA 0012" #NOTE: This will need to be changed
+    airfoil_armwing_index = virtual_creature.chromosome.airfoil_armwing
+    airfoil_handwing_index = virtual_creature.chromosome.airfoil_handwing
+    #print(airfoil_armwing_index, airfoil_handwing_index)
+    # Recall that dict keys are ordered as of Python 3.7
+    airfoil_keys = list(globals.AIRFOIL_DATABASE.keys())
+    airfoil_armwing  = airfoil_keys[airfoil_armwing_index]
+    airfoil_handwing = airfoil_keys[airfoil_handwing_index]
 
     # Get wing parameters
     AR_aw, AR_hw, area_aw, area_hw = virtual_creature.AR_aw, virtual_creature.AR_hw, virtual_creature.area_aw, virtual_creature.area_hw
