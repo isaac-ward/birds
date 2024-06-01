@@ -7,10 +7,10 @@ from genetic.chromosome import GeneDiscrete
 # and their feasible ranges
 CHROMOSOME_DEFINITION = [
     # Gene(gene_name, min_val, max_val)
-    Gene("wingspan", 2, 10),
-    Gene("norm_wrist_position", 0.1, 0.9),
-    Gene("wing_root_chord", 0.1, 4),
-    Gene("taper_armwing", 0.5, 0.9),
+    Gene("wingspan", 5, 20),
+    Gene("norm_wrist_position", 0.2, 0.8),
+    Gene("wing_root_chord", 1.0, 1.2),
+    Gene("taper_armwing", 0.5, 1.0),
     Gene("taper_handwing", 0.1, 0.5),
     Gene("norm_COG_position", 0.2, 0.3), # 0.25 is ideal
     # These are indices into a list of airfoil names
@@ -18,17 +18,17 @@ CHROMOSOME_DEFINITION = [
     GeneDiscrete("airfoil_handwing", 0, 2), 
     # Control parameters
     # Constant parameters
-    Gene("basis_left_const", -1.0, 1.0),
-    Gene("basis_left_poly1", 0, 0),
-    Gene("basis_left_poly2", 0, 0),
-    Gene("basis_left_poly3", 0, 0),
+    Gene("basis_left_const", -2.0, 2.0),
+    Gene("basis_left_poly1", -1, 1),
+    Gene("basis_left_poly2", -1, 1),
+    Gene("basis_left_poly3", -1, 1),
     Gene("basis_left_poly4", 0, 0),
     Gene("basis_left_poly5", 0, 0),
     # 2 sinusoids
-    Gene("basis_left_sinamp1", 0, 0),
-    Gene("basis_left_sinfreq1", -1, +1),
-    Gene("basis_left_sinamp2", 0, 0),
-    Gene("basis_left_sinfreq2", -1, +1),
+    Gene("basis_left_sinamp1", -3, 3),
+    Gene("basis_left_sinfreq1", -0.1, +0.1),
+    Gene("basis_left_sinamp2", -3, 3),
+    Gene("basis_left_sinfreq2", -0.1, +0.1),
     # A sawtooth function
     Gene("basis_left_sawtooth", 1000000, 3000000), # TODO unused! Discountinuities mess with the dynamics - no sawtooth allowed!
     # 2 exponentials
@@ -37,16 +37,16 @@ CHROMOSOME_DEFINITION = [
     Gene("basis_left_expamp2", 0, 0),
     Gene("basis_left_exppwr2", 0, 0),
     # And same for the right
-    Gene("basis_right_const", -1.0, 1.0),
-    Gene("basis_right_poly1", 0, 0),
-    Gene("basis_right_poly2", 0, 0),
-    Gene("basis_right_poly3", 0, 0),
+    Gene("basis_right_const", -2.0, 2.0),
+    Gene("basis_right_poly1", -1, 1),
+    Gene("basis_right_poly2", -1, 1),
+    Gene("basis_right_poly3", -1, 1),
     Gene("basis_right_poly4", 0, 0),
     Gene("basis_right_poly5", 0, 0),
-    Gene("basis_right_sinamp1", 0, 0),
-    Gene("basis_right_sinfreq1", -1, +1),
-    Gene("basis_right_sinamp2", 0, 0),
-    Gene("basis_right_sinfreq2", -1, +1),
+    Gene("basis_right_sinamp1", -3, 3),
+    Gene("basis_right_sinfreq1", -0.1, +0.1),
+    Gene("basis_right_sinamp2", -3, 3),
+    Gene("basis_right_sinfreq2", -0.1, +0.1),
     Gene("basis_right_sawtooth", 1000000, 3000000), # TODO unused! Discountinuities mess with the dynamics - no sawtooth allowed!
     Gene("basis_right_expamp1", 0, 0),
     Gene("basis_right_exppwr1", 0, 0),
@@ -55,8 +55,8 @@ CHROMOSOME_DEFINITION = [
 ]
 
 # Simulation parameters
-SIMULATION_T = 10
-DT = 0.005
+SIMULATION_T = 8
+DT = 0.001
 
 # Global aerodynamic parameters
 AIR_DENSITY = 1.225 #kg/m^3

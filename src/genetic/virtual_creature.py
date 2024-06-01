@@ -178,14 +178,12 @@ class VirtualCreature:
         exponential = expamp1*np.exp(exppwr1*t) + expamp2*np.exp(exppwr2*t)
         total = polynomial + sinusoid + sawtooth + exponential
 
-        # TODO this can allow discontinuities
-
-        # Modulo it into the range [-pi, pi]
-        result = (total + np.pi) % (2*np.pi) - np.pi
+        # Sigmoid *2 - 1 the total so that it's in the range -1 to 1
+        result = 2 / (1 + np.exp(-total)) - 1
 
         # Now scale it into the range [-25deg, +25deg]
         rad25deg = 25 * np.pi / 180
-        result = result * rad25deg / np.pi
+        result = result * rad25deg
 
         # print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, saw: {sawtooth:.2f}, exp: {exponential:.2f}, total: {total:.2f}, result: {result:.2f}")
 
@@ -341,8 +339,14 @@ class VirtualCreature:
                 [-np.sin(angle), 0, np.cos(angle)]
             ])
 
-        left_wing_vertices  = left_wing_vertices  @ get_wing_angle_rot(self.calc_wing_angle(t, "left"))
-        right_wing_vertices = right_wing_vertices @ get_wing_angle_rot(self.calc_wing_angle(t, "right"))
+        wing_angle_left = self.calc_wing_angle(t, "left")
+        wing_angle_right = self.calc_wing_angle(t, "right")
+        if t == -1:
+            # If we're at t=-1, we want to set the wing angles to zero
+            wing_angle_left = 0
+            wing_angle_right = 0
+        left_wing_vertices  = left_wing_vertices  @ get_wing_angle_rot(wing_angle_left)
+        right_wing_vertices = right_wing_vertices @ get_wing_angle_rot(wing_angle_right)
 
         # Now we can construct the full vertices and faces
         vertices.extend(left_wing_vertices)
@@ -365,6 +369,34 @@ class VirtualCreature:
 
         return vertices, faces
     
+    def save_as_obj(self, filepath, t):        
+        # Get the vertices and faces at t=-1 (meaning zero wing angle),
+        # or at the given time t
+        vertices, faces = self.get_mesh_verts_and_faces(t)
+
+        # Save as an obj file
+        with open(filepath, 'w') as obj_file:
+            # Header 
+            # TODO
+
+            # Write vertices
+            for vertex in vertices:
+                obj_file.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+            
+            # Write faces
+            for face in faces:
+                # OBJ format expects 1-based indexing for faces
+                obj_file.write(f"f {' '.join(str(idx + 1) for idx in face)}\n")
+
+    def save_as_point_cloud(self, filepath, t):        
+        # Get the vertices and faces at t=-1 (meaning zero wing angle),
+        # or at the given time t
+        vertices, faces = self.get_mesh_verts_and_faces(t)
+        with open(filepath, 'w') as obj_file:
+            # Write vertices
+            for vertex in vertices:
+                obj_file.write(f"{vertex[0]} {vertex[1]} {vertex[2]}\n")
+        
     def __getstate__(self):
         return self.__dict__
     def __setstate__(self, state):

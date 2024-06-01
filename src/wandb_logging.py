@@ -1,6 +1,7 @@
 import wandb 
 import os 
 import datetime
+import numpy as np
 from glob import glob
 
 import keys
@@ -40,6 +41,9 @@ def log_image(key, filepath):
 def log_video(key, filepath):
     wandb.log({key: wandb.Video(filepath)})
 
+def log_obj(key, filepath):
+    wandb.log({key: [wandb.Object3D(filepath)]})
+
 def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
     """
     Need to log all the images and videos per generation 
@@ -52,6 +56,8 @@ def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
             fitnesses.png
             fittest_individual.png
             fittest_state_trajectory.png
+            fittest_individual.obj
+            fittest_individual_no_wing_angle.obj
             simulation.mp4
         generation_1:
             ...
@@ -72,6 +78,13 @@ def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
                 log_video(f"{prefix}{filename}{suffix}", filepath)
             elif filepath.endswith(".png"):
                 log_image(f"{prefix}{filename}{suffix}", filepath)
+            elif filepath.endswith(".obj"):
+                # Load the list of points from the obj file
+                points = []
+                for line in open(filepath, 'r'):
+                    points.append(list(map(float, line.split())))
+                points = np.array(points)
+                log_obj(f"{prefix}{filename}{suffix}", points)
             else:
                 print(f"Unknown file type for logging: {filepath}")
     
@@ -100,8 +113,9 @@ def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
         # Log video
         generation_log_helper('simulation.mp4')  
 
-        # Should do a 3d log of the creature too
-        # TODO      
+        # 3d point clouds are supported by W&B
+        # generation_log_helper('fittest_individual_point_cloud.obj')
+        # generation_log_helper('fittest_individual_point_cloud_zero_wing_angle.obj')
 
     # Log evolution video
     log_helper(log_folder, 'evolution.mp4', prefix="overall/")

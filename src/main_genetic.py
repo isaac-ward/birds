@@ -47,7 +47,10 @@ def solve_ga(
             fitness = evaluate_fitness(individual, fitness_test_mode)
             evaluate_fitness_results.append(fitness)
         fitness_scores     = [result[0] for result in evaluate_fitness_results]
-        state_trajectories = [result[1] for result in evaluate_fitness_results]
+        # Fitness components is a list of dicts, but we want a dict of lists
+        fitness_components = [result[1] for result in evaluate_fitness_results]
+        fitness_components = {key: [dic[key] for dic in fitness_components] for key in fitness_components[0]}
+        state_trajectories = [result[2] for result in evaluate_fitness_results]
         fitness_scores_per_generation.append(fitness_scores)
 
         # Select the fittest individuals to be parents
@@ -88,7 +91,8 @@ def solve_ga(
             # Log the fitness scores of the population as as box plot
             visuals.plot_fitnesses(
                 f"{generation_folder}/fitnesses.png",
-                fitness_scores
+                fitness_scores,
+                fitness_components
             )
 
             # Log the state trajectories for the best individual
@@ -104,6 +108,12 @@ def solve_ga(
                 f"{generation_folder}/fittest_individual.png",
                 fittest_copy
             )
+            # And save as object files
+            fittest_copy.save_as_obj(f"{generation_folder}/fittest_individual.obj", t=0)
+            fittest_copy.save_as_obj(f"{generation_folder}/fittest_individual_zero_wing_angle.obj", t=-1)
+            # And point cloud
+            fittest_copy.save_as_point_cloud(f"{generation_folder}/fittest_individual_point_cloud.obj", t=0)
+            fittest_copy.save_as_point_cloud(f"{generation_folder}/fittest_individual_point_cloud_zero_wing_angle.obj", t=-1)
 
             # Log the distribution of the chromosomes in the population and where the fittest individual is
             visuals.plot_chromosome_distributions(
@@ -142,10 +152,9 @@ def solve_ga(
             fittest_creature_pkl_per_generation
         )
 
-
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
-    best_individual = max(population, key=evaluate_fitness) #not sure how this works with fitnesstest argument
+    best_individual = population[np.argmax(fitness_scores)]
     return best_individual
 
 if __name__ == "__main__":
@@ -155,9 +164,9 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     best_individual = solve_ga(
-        population_size=64,
-        num_generations=6,
-        num_parents_per_generation=16,
+        population_size=32,
+        num_generations=2,
+        num_parents_per_generation=10,
         log_folder=log_folder,
         logging=True,
         log_videos=True,

@@ -16,6 +16,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
     # We'll log all this
     state_trajectory = []
+    fitness_components = {}
 
     def valid_state_check(state_trajectory):
         # If any of the values are >> 1000, then
@@ -24,9 +25,12 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
         for state in state_trajectory:
             if np.any(np.abs(state) > 1000000):
                 return False
+            # If any of the angular velocities are too high the it's also over
+            angular_velocity_limit = 20 # rad/s
+            if np.any(np.abs(state[10:13]) > angular_velocity_limit):
+                return False
         return True
 
-    # forward_step(virtual_creature)
     if test_mode == 1:
 
         # Rollout a simulation
@@ -44,6 +48,9 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
         if not valid_state_check(state_trajectory):
             fitness = -np.inf
+            fitness_components["forward_distance"] = -np.inf
+            fitness_components["downward_distance"] = -np.inf
+            fitness_components["average_lateral_divergence"] = -np.inf
         else:
             # Now evaluate the fitness based on the trajectory
             # A fitter creature will have:
@@ -58,12 +65,22 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             downward_distance = state_trajectory[-1][2] - state_trajectory[0][2]
 
             # Penalize for going off course (in the y direction)
-            # This will be >= 0
-            average_lateral_divergence = sum([abs(state[1]) for state in state_trajectory]) / len(state_trajectory)
+            # This will be >= 0. Remeber to abs
+            average_lateral_divergence = np.mean(np.abs([state[1] for state in state_trajectory]))
+
+            # Set hyperparameters for fitness
+            forward_distance *= 50
+            downward_distance *= -25
+            average_lateral_divergence *= -500
 
             # Fitness is a mix of these, accounting for positive/negative. Note that
             # we are trying to maximize this!
-            fitness = 50*forward_distance - 50*downward_distance - average_lateral_divergence
+            fitness = forward_distance + downward_distance + average_lateral_divergence
+
+            # Store the fitness components
+            fitness_components["forward_distance"] = forward_distance
+            fitness_components["downward_distance"] = downward_distance
+            fitness_components["average_lateral_divergence"] = average_lateral_divergence
 
     elif test_mode == 2:
         # Define the waypoints as a list of tuples (x, y, z)
@@ -103,7 +120,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
     # We may want additional logging data, in
     # which case we return more than just the fitness
     if return_logging_data:
-        return fitness, state_trajectory
+        return fitness, fitness_components, state_trajectory
     else:
         return fitness
 

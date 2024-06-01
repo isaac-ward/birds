@@ -140,25 +140,52 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
     plt.savefig(filepath, dpi=600)
     plt.close()
 
-def plot_fitnesses(filepath, fitness_scores):
+def plot_fitnesses(filepath, fitness_scores, fitness_components):
     """
-    Plot the fitness scores of the population
+    Plot the fitness scores of the population, and the breakdown of the fitness
+    in terms of the components
     """
+
+    fitness_component_names = list(fitness_components.keys())
 
     # Create the plot
-    fig = plt.figure(figsize=(6, 6), dpi=600)
-    ax = fig.add_subplot(111)
+    fig = plt.figure(figsize=(8, 6), dpi=600)
+    axes_hist = []
+    axes_bars = []
+    for i in range(len(fitness_component_names) + 1):
+        axes_hist.append(fig.add_subplot(len(fitness_component_names) + 1, 2, 2*i + 1))    
+        axes_bars.append(fig.add_subplot(len(fitness_component_names) + 1, 2, 2*i + 2))
 
     # Ignore -inf values
-    fitness_scores = [fitness for fitness in fitness_scores if fitness != -np.inf]
+    indices_to_remove = [i for i, fitness in enumerate(fitness_scores) if fitness == -np.inf]
+    fitness_scores = [fitness for i, fitness in enumerate(fitness_scores) if i not in indices_to_remove]
+    for fitness_component_name in fitness_component_names:
+        fitness_components[fitness_component_name] = [fitness for i, fitness in enumerate(fitness_components[fitness_component_name]) if i not in indices_to_remove]
+
+    def plot_freq_helper(ax, data, title, xlabel):
+        ax.hist(data, bins=30, edgecolor='black', alpha=0.7)
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('Frequency')
+
+    def plot_bar_helper(ax, data, title, ylabel):
+        ax.bar(range(len(data)), data)
+        ax.set_title(title)
+        ax.set_xlabel('Creature index')
+        ax.set_ylabel(ylabel)
 
     # Fitnesses may be widely spread, with few overlapping, so
     # a good choice of plot is a ...
     # histogram of fitness scores
-    ax.hist(fitness_scores, bins=30, edgecolor='black', alpha=0.7)
-    ax.set_title('Distribution of Fitness Scores')
-    ax.set_xlabel('Fitness')
-    ax.set_ylabel('Frequency')
+    plot_freq_helper(axes_hist[0], fitness_scores, 'Distribution of fitnesses', 'Fitness')
+    # And a bar plot for every creature
+    plot_bar_helper(axes_bars[0], fitness_scores, 'Fitnesses per creature', 'Fitness')
+
+    # Then break down the rest
+    for i, fitness_component_name in enumerate(fitness_component_names):
+        fitness_component = fitness_components[fitness_component_name]
+        plot_freq_helper(axes_hist[i+1], fitness_component, f'Distribution of {fitness_component_name}', fitness_component_name)
+        plot_bar_helper(axes_bars[i+1], fitness_component, f'{fitness_component_name} per creature', fitness_component_name)
 
     # Save the plot
     plt.tight_layout()
@@ -443,9 +470,9 @@ def render_3d_frame(
 
             # Scale up bounds by scale factor
             if tracking:
-                sf = 2
-            else:
                 sf = 1.2
+            else:
+                sf = 1.05
             offset_from_center *= sf            
 
             extent_means = [0.5 * (extent[1] + extent[0]) for extent in extents]
@@ -524,7 +551,7 @@ def render_simulation_of_creature(log_folder, creature, fps=25):
     
     # Run the creature for some time
     t = 0
-    fps = 10
+    fps = 20 # FPS for the video of this simulation
     # We don't want to render every step of the simulation
     # so we instead playback at this target fps^
     num_sim_steps = int(globals.SIMULATION_T / globals.DT)
@@ -564,7 +591,7 @@ def render_simulation_of_creature(log_folder, creature, fps=25):
     if wingspan > (extents[1][1] - extents[1][0]):
         extents[1] = (-wingspan/2, wingspan/2)
     # Add a buffer 
-    scale_factor = 1.5
+    scale_factor = 1.1
     extents = [ (scale_factor * extent[0], scale_factor * extent[1]) for extent in extents]
 
     # Do the rendering of the frames
@@ -617,7 +644,6 @@ def render_evolution_of_creatures(log_folder, filepaths_virtual_creatures):
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),
-            # This is key to making nice plots
             wing_angle_left=0,
             wing_angle_right=0
         )
@@ -627,8 +653,8 @@ def render_evolution_of_creatures(log_folder, filepaths_virtual_creatures):
     vertices_list = []
     faces_list = []
     for creature in creatures:
-        # Get what the creature looks like at time 0
-        vertices, faces = creature.get_mesh_verts_and_faces(0)
+        # Get what the creature looks like with no rotation
+        vertices, faces = creature.get_mesh_verts_and_faces(-1)
         vertices_list.append(vertices)
         faces_list.append(faces)
     
@@ -649,22 +675,22 @@ def render_evolution_of_creatures(log_folder, filepaths_virtual_creatures):
 
     # Now how many frames do we want?
     video_length_s_per_creature = 1
-    fps = 25
+    fps = 20
     num_frames_per_creature = int(video_length_s_per_creature * fps)
 
     # Get the max wingspans from the creatures
     max_y_extent = max([max([v[1] for v in vertices]) for vertices in vertices_list])
     min_y_extent = min([min([v[1] for v in vertices]) for vertices in vertices_list])
     middle_y = 0.5 * (max_y_extent + min_y_extent)
-    range_y = max_y_extent - min_y_extent
-    extent = (middle_y - 1.5 * range_y, middle_y + 1.5 * range_y)
+    half_range_y = (max_y_extent - min_y_extent) / 2
+    extent = (middle_y - 1.1 * half_range_y, middle_y + 1.1 * half_range_y)
 
     # Create the frames
     frame_filepaths = []
     for i in tqdm(range(len(creatures) - 1), desc="Rendering frames for evolution video"):
         initial_vertices = vertices_list[i]
         final_vertices   = vertices_list[i + 1]
-        for j in range(num_frames_per_creature):
+        for j in tqdm(range(num_frames_per_creature), desc=f"Rendering frames for generation {i}"):
             t = j / num_frames_per_creature
             vertices = interpolate_vertices(initial_vertices, final_vertices, t)
             filepath = f"{log_folder}/frames_evolution/{i*num_frames_per_creature + j}.png"
