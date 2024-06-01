@@ -2,6 +2,7 @@ logs/*
 !.gitkeep
 .conda
 keys.py
+wandb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

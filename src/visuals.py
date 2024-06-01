@@ -682,41 +682,8 @@ def render_evolution_of_creatures(log_folder, filepaths_virtual_creatures):
             )
             frame_filepaths.append(filepath)
 
-
-    # for i in tqdm(range(num_frames), desc="Rendering frames for evolution video"):
-    #     # When i is 0, we want the first creature and second creature
-    #     # when i is num_frames, we want the second to last and last creature
-    #     t = i / num_frames
-
-    #     # Get the time
-    #     t = i / num_frames
-    #     # Get the creature index
-    #     creature_index = int(t * len(creatures))
-    #     # Get the creature
-    #     creature = creatures[creature_index]
-    #     # Get the vertices
-    #     vertices1 = vertices_list[creature_index]
-    #     vertices2 = vertices_list[(creature_index + 1) % len(creatures)]
-    #     # Interpolate
-    #     vertices = interpolate_vertices(vertices1, vertices2, t)
-    #     # Render the frame
-    #     filepath = f"{log_folder}/frames_evolution/{i}.png"
-    #     render_3d_frame(
-    #         filepath,
-    #         creature,
-    #         override_vertices=vertices,
-    #         render_as_mesh=True,
-    #         if_mesh_render_verts=False,
-    #         if_mesh_render_cog=False,
-    #         extents=[(-5, 5), (-5, 5), (-5, 5)],
-    #         past_3d_positions=[],
-    #         current_time_s=-1,
-    #         total_time_s=-1,
-    #     )
-    #     frame_filepaths.append(filepath)
-
     # Pausea t the start and end for 1 second
-    num_frames_pause = int(fps)
+    num_frames_pause = int(fps * 1)
     # Copy the first frame
     for i in range(num_frames_pause):
         frame_filepaths.insert(0, frame_filepaths[0])
