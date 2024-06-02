@@ -9,8 +9,7 @@ from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
 from genetic.fitness import evaluate_fitness, select_fittest_individuals
 
-import visuals2 as visuals
-import visuals as visuals_legacy
+import visuals2 as vis
 
 import utils
 
@@ -90,14 +89,14 @@ def solve_ga(
                 pickle.dump(population[fittest_index], f)
 
             # Log the fitness scores of the population as as box plot
-            visuals.plot_fitnesses(
+            vis.plot_fitnesses(
                 f"{generation_folder}/fitnesses.png",
                 fitness_scores,
                 fitness_components
             )
 
             # Log the state trajectories for the best individual
-            visuals.plot_state_trajectory(
+            vis.plot_state_trajectory(
                 f"{generation_folder}/fittest_state_trajectory.png",
                 state_trajectory=state_trajectories[fittest_index]
             )
@@ -113,7 +112,7 @@ def solve_ga(
             fittest_copy.save_as_point_cloud(f"{generation_folder}/fittest_individual_point_cloud_zero_wing_angle.obj", t=-1)
 
             # Log the distribution of the chromosomes in the population and where the fittest individual is
-            visuals.plot_chromosome_distributions(
+            vis.plot_chromosome_distributions(
                 f"{generation_folder}/chromosome_distribution.png",
                 population,
                 fittest_index
@@ -121,7 +120,7 @@ def solve_ga(
 
             # Log an animation for the best individual
             if log_videos:
-                visuals.render_simulation_of_creature(
+                vis.render_simulation_of_creature(
                     generation_folder, 
                     fittest_copy,
                 )
@@ -137,17 +136,17 @@ def solve_ga(
         pbar.update(1)
 
     # Plot the average fitness and the best fitness over time
-    visuals.plot_fitnesses_over_time(
+    vis.plot_fitnesses_over_time(
         f"{log_folder}/fitnesses_over_time.png",
         fitness_scores_per_generation
     )
 
-    # Plot the evolution of the creatures over time
-    if log_videos:
-        visuals_legacy.render_evolution_of_creatures(
-            log_folder,
-            fittest_creature_pkl_per_generation
-        )
+    # # Plot the evolution of the creatures over time
+    # if log_videos:
+    #     vis_legacy.render_evolution_of_creatures(
+    #         log_folder,
+    #         fittest_creature_pkl_per_generation
+    #     )
 
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
