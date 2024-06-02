@@ -10,6 +10,7 @@ from genetic.virtual_creature import VirtualCreature
 from genetic.fitness import evaluate_fitness, select_fittest_individuals
 
 import visuals2 as visuals
+import visuals as visuals_legacy
 
 import utils
 
@@ -141,12 +142,12 @@ def solve_ga(
         fitness_scores_per_generation
     )
 
-    # # Plot the evolution of the creatures over time
-    # if log_videos:
-    #     visuals.render_evolution_of_creatures(
-    #         log_folder,
-    #         fittest_creature_pkl_per_generation
-    #     )
+    # Plot the evolution of the creatures over time
+    if log_videos:
+        visuals_legacy.render_evolution_of_creatures(
+            log_folder,
+            fittest_creature_pkl_per_generation
+        )
 
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
