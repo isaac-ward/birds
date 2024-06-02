@@ -20,15 +20,9 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
     def valid_state_check(state_trajectory):
         # If any of the values are >> 1000, then
-        # the simulation has failed and the creature 
-        # should be given a fitness of -inf. Not -inf bc
-        # thta doesn't render well, but a large negative number
+        # the simulation has failed 
         for state in state_trajectory:
             if np.any(np.abs(state) > 1000000):
-                return False
-            # If any of the angular velocities are too high the it's also over
-            angular_velocity_limit = 7 # rad/s, determined experimentally
-            if np.any(np.abs(state[13:15]) > angular_velocity_limit):
                 return False
         return True
 
@@ -52,6 +46,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             fitness_components["forward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
             fitness_components["downward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
             fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+            fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
             fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
         else:
             # Now evaluate the fitness based on the trajectory
@@ -70,19 +65,31 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             # This will be >= 0. Remeber to abs
             average_lateral_divergence = np.mean(np.abs([state[1] for state in state_trajectory]))
 
+            # Penalize for going beyond +- 90 degrees pitch
+            #qx, qy, qz, qw = np.array([state[9:13] for state in state_trajectory])
+            #euler_angles = 
+
+            # Penalize for spinning too fast
+            max_angular_divergence = \
+                np.mean(np.abs([state[13] for state in state_trajectory])) + \
+                np.mean(np.abs([state[14] for state in state_trajectory])) + \
+                np.mean(np.abs([state[15] for state in state_trajectory]))
+
             # Set hyperparameters for fitness
             forward_distance *= 50
             downward_distance *= -40
             average_lateral_divergence *= -50
+            max_angular_divergence *= -400
 
             # Fitness is a mix of these, accounting for positive/negative. Note that
             # we are trying to maximize this!
-            fitness = forward_distance + downward_distance + average_lateral_divergence
+            fitness = forward_distance + downward_distance + average_lateral_divergence + max_angular_divergence
 
             # Store the fitness components
             fitness_components["forward_distance"] = forward_distance
             fitness_components["downward_distance"] = downward_distance
             fitness_components["average_lateral_divergence"] = average_lateral_divergence
+            fitness_components["max_angular_divergence"] = max_angular_divergence
             fitness_components["penalty_invalid_state"] = 0
 
     elif test_mode == 2:

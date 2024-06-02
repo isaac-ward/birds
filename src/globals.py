@@ -25,10 +25,10 @@ CHROMOSOME_DEFINITION = [
     Gene("basis_left_poly4", 0, 0),
     Gene("basis_left_poly5", 0, 0),
     # 2 sinusoids
-    Gene("basis_left_sinamp1", -6, 6),
-    Gene("basis_left_sinfreq1", -0.001, +0.001),
-    Gene("basis_left_sinamp2", -6, 6),
-    Gene("basis_left_sinfreq2", -0.001, +0.001),
+    Gene("basis_left_sinamp1", -8, 8),
+    Gene("basis_left_sinfreq1", -0.01, +0.01),
+    Gene("basis_left_sinamp2", -8, 8),
+    Gene("basis_left_sinfreq2", -0.01, +0.01),
     # And same for the right
     Gene("basis_right_const", -5.0, 5.0),
     Gene("basis_right_poly1", -3, 3),
@@ -36,15 +36,15 @@ CHROMOSOME_DEFINITION = [
     Gene("basis_right_poly3", -3, 3),
     Gene("basis_right_poly4", 0, 0),
     Gene("basis_right_poly5", 0, 0),
-    Gene("basis_right_sinamp1", -6, 6),
-    Gene("basis_right_sinfreq1", -0.001, +0.001),
-    Gene("basis_right_sinamp2", -6, 6),
-    Gene("basis_right_sinfreq2", -0.001, +0.001),
+    Gene("basis_right_sinamp1", -8, 8),
+    Gene("basis_right_sinfreq1", -0.01, +0.01),
+    Gene("basis_right_sinamp2", -8, 8),
+    Gene("basis_right_sinfreq2", -0.01, +0.01),
 ]
 
 # Simulation parameters
 SIMULATION_T = 8
-DT = 0.001
+DT = 0.0001
 
 # Global aerodynamic parameters
 AIR_DENSITY = 1.225 #kg/m^3
@@ -52,7 +52,7 @@ GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
 
 # Fitness Constants
-FITNESS_PENALTY_INVALID_STATE = -1e6
+FITNESS_PENALTY_INVALID_STATE = -1e4
 # Define the distance threshold within which a waypoint is considered "reached"
 WAYPOINT_THRESHOLD = 1.0
 # Define the reward/penalty for reaching a waypoint

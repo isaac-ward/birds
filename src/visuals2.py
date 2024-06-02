@@ -14,6 +14,7 @@ from tqdm import tqdm
 from dynamics import forward_step
 from genetic.virtual_creature import VirtualCreature
 import globals
+from genetic.fitness import evaluate_fitness
 
 def plot_state_trajectory(filepath, state_trajectory, state_element_labels=VirtualCreature.get_state_vector_labels()):
     """
@@ -164,7 +165,7 @@ def plot_fitnesses(filepath, fitness_scores, fitness_components):
         fitness_components[fitness_component_name] = [fitness for i, fitness in enumerate(fitness_components[fitness_component_name]) if i not in indices_to_remove]
 
     def plot_freq_helper(ax, data, title, xlabel):
-        ax.hist(data, bins=30, edgecolor='black', alpha=0.7)
+        ax.hist(data, bins=30, alpha=0.7)
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Frequency')
@@ -222,7 +223,7 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
     n_cols = max(plots_per_row)
 
     # Create the plot
-    fig = plt.figure(figsize=(12, 12), dpi=600)
+    fig = plt.figure(figsize=(16, 8), dpi=600)
     
     # Create the subplots
     axes = [fig.add_subplot(n_rows, n_cols, i+1) for i in range(n_rows * n_cols)]
@@ -303,9 +304,9 @@ def get_3d_rotation_matrix(quaternion):
     return rotation_matrix
 
 def render_simulation_animation(
-    virtual_creature_per_sim_step,
+    virtual_creature,
+    state_trajectory,
     extents=[],
-    past_3d_positions_per_sim_step=[],
     fps=25
 ):
     """
@@ -356,9 +357,12 @@ def render_simulation_animation(
         """
         nonlocal extents
 
+        # Zero is gonna cause a problem
+        if simulation_step_index == 0:
+            simulation_step_index = 1
+
         # Get the virtual creature for this frame, the vertices, and the past positions
-        virtual_creature = virtual_creature_per_sim_step[simulation_step_index]
-        past_3d_positions = past_3d_positions_per_sim_step[simulation_step_index]
+        curr_state_trajectory = np.array(state_trajectory)[:simulation_step_index,:]
         sim_current_time_s = simulation_step_index * globals.DT
         
         # Get the vertices and faces and show in matplotlib
@@ -367,8 +371,9 @@ def render_simulation_animation(
         # Need to apply the translation and rotation to the vertices
         # before rendering. Position is x,y,z and rotation is euler
         # angles in radians about x,y,z axes
-        position = virtual_creature.position_xyz
-        rotation = virtual_creature.quaternions
+        position = curr_state_trajectory[-1,:3]
+        rotation = curr_state_trajectory[-1,9:13]
+        #print(f"\n\nPosition: {position}, rotation: {rotation}")
         # For the close up we don't want to do the transformation
         if closeup:
             transformation = np.eye(4)
@@ -466,11 +471,11 @@ def render_simulation_animation(
         ax.view_init(azim=azim, elev=elev, roll=roll)
 
         # Render previous positions as a line if given
-        if len(past_3d_positions) > 0 and not closeup:
+        if len(curr_state_trajectory) > 0 and not closeup:
             # Get the x,y,z components of the past positions
-            x = [p[0] for p in past_3d_positions]
-            y = [p[1] for p in past_3d_positions]
-            z = [p[2] for p in past_3d_positions]
+            x = [p[0] for p in curr_state_trajectory[:,:3]]
+            y = [p[1] for p in curr_state_trajectory[:,:3]]
+            z = [p[2] for p in curr_state_trajectory[:,:3]]
 
             # Plot the line
             ax.plot(x, y, z, color='black', alpha=0.5)
@@ -505,7 +510,7 @@ def render_simulation_animation(
         # Top down
         render_to_axes(axes[3], simulation_step_index, azim=-90, elev=-90, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
         # Close up view
-        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.1, hide_labels=True, closeup=True, tracking=False)
+        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=2, hide_labels=True, closeup=True, tracking=False)
 
         # Set titles
         axes[0].set_title("3D view")
@@ -539,7 +544,7 @@ def save_animation(fig, ani, filepath_out, fps=25):
     fig.clf()
     plt.close(fig)
 
-def render_simulation_of_creature(log_folder, creature, fps=25):
+def render_simulation_of_creature(log_folder, creature, test_mode, fps=25):
     # Make a copy of the creature and reset its state
     creature = copy.deepcopy(creature)
     creature.reset_state()
@@ -551,35 +556,15 @@ def render_simulation_of_creature(log_folder, creature, fps=25):
     # so we instead playback at this target fps^
     num_sim_steps = int(globals.SIMULATION_T / globals.DT)
     num_render_steps = int(globals.SIMULATION_T * fps)
-    # Log the following for rendering frames
-    creature_per_sim_step = []
-    running_state_trajectory = []
-    state_trajectory_per_sim_step = []
-    times = []
 
     # Do the simulation
-    # TODO this should come from fitness.py
-    for i in tqdm(range(num_sim_steps), desc=f"Running forward dynamics to generate video, num_sim_steps={num_sim_steps}"):
-
-        # Run the dynamics forward
-        forward_step(creature, t, dt=globals.DT)
-
-        # Get the state vector
-        state_vector = creature.get_state_vector()
-        running_state_trajectory.append(state_vector)
-        
-        # Log everyrthing over time
-        creature_per_sim_step.append(copy.deepcopy(creature))
-        state_trajectory_per_sim_step.append(copy.deepcopy(running_state_trajectory))
-        times.append(t)
-
-        t += globals.DT
+    fitness, fitness_components, state_trajectory = evaluate_fitness(creature, test_mode=test_mode, return_logging_data=True)
 
     # Now we know the extents
     extents = [
-        (min([state[0] for state in running_state_trajectory]), max([state[0] for state in running_state_trajectory])),
-        (min([state[1] for state in running_state_trajectory]), max([state[1] for state in running_state_trajectory])),
-        (min([state[2] for state in running_state_trajectory]), max([state[2] for state in running_state_trajectory])),
+        (min([state[0] for state in state_trajectory]), max([state[0] for state in state_trajectory])),
+        (min([state[1] for state in state_trajectory]), max([state[1] for state in state_trajectory])),
+        (min([state[2] for state in state_trajectory]), max([state[2] for state in state_trajectory])),
     ]
     wingspan = creature.chromosome.wingspan
     # If the wingspan is bigger than the y extent, then make the y extent bigger
@@ -591,9 +576,9 @@ def render_simulation_of_creature(log_folder, creature, fps=25):
 
     # Render the animation
     fig, ani = render_simulation_animation(
-        virtual_creature_per_sim_step=creature_per_sim_step,
+        virtual_creature=creature,
+        state_trajectory=state_trajectory,
         extents=extents,
-        past_3d_positions_per_sim_step=[ np.array(st)[:,0:3] for st in state_trajectory_per_sim_step ],
         fps=fps
     )
     save_animation(fig, ani, f"{log_folder}/simulation.mp4", fps=fps)

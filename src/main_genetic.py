@@ -4,6 +4,7 @@ import copy
 from tqdm import tqdm
 import random
 import pickle
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
@@ -12,6 +13,39 @@ from genetic.fitness import evaluate_fitness, select_fittest_individuals
 import visuals2 as vis
 
 import utils
+
+def parallel_evaluate_fitness(virtual_creatures, test_mode=1, return_logging_data=True):
+    """
+    A parallelized way to evaluate the fitness of a list of virtual creatures
+    """
+    results = []
+
+    # Log progress with a progress bar
+    pbar = tqdm(total=len(virtual_creatures), desc="Evaluating fitness of virtual creatures (in parallel)")
+
+    num_processes = min(len(virtual_creatures), os.cpu_count() - 8)
+    num_processes = max(num_processes, 1)
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        futures = {
+            executor.submit(
+                evaluate_fitness, 
+                vc, 
+                test_mode, 
+                return_logging_data
+            ): vc for vc in virtual_creatures
+        }
+
+        # Loop over the futures as they complete
+        for future in as_completed(futures):
+            vc = futures[future]
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                print(f"Virtual creature {vc} generated an exception: {e}")
+            pbar.update(1)
+
+    return results
 
 def solve_ga(
     population_size,
@@ -42,10 +76,7 @@ def solve_ga(
     for generation_index in range(num_generations):
        
         # Evaluate the fitness of each individual in the population
-        evaluate_fitness_results = []
-        for individual in tqdm(population, desc="Evaluating fitness of population"):
-            fitness = evaluate_fitness(individual, fitness_test_mode)
-            evaluate_fitness_results.append(fitness)
+        evaluate_fitness_results = parallel_evaluate_fitness(population, test_mode=fitness_test_mode)
         fitness_scores     = [result[0] for result in evaluate_fitness_results]
         # Fitness components is a list of dicts, but we want a dict of lists
         fitness_components = [result[1] for result in evaluate_fitness_results]
@@ -123,6 +154,7 @@ def solve_ga(
                 vis.render_simulation_of_creature(
                     generation_folder, 
                     fittest_copy,
+                    test_mode=fitness_test_mode
                 )
 
         # Replace the old population with the new generation
@@ -159,10 +191,12 @@ if __name__ == "__main__":
     log_folder = utils.make_log_folder()
     
     # Run the genetic algorithm to solve the problem
+    population_size = 256
+    num_parents_per_generation = int(0.33 * population_size)
     best_individual = solve_ga(
-        population_size=256,
+        population_size=population_size,
         num_generations=10,
-        num_parents_per_generation=128,
+        num_parents_per_generation=num_parents_per_generation,
         log_folder=log_folder,
         logging=True,
         log_videos=True,
