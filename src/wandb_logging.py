@@ -94,6 +94,9 @@ def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
     # List all directories in log_folder
     generations = [folder for folder in os.listdir(log_folder) if os.path.isdir(os.path.join(log_folder, folder))]
 
+    # Ignore non folders
+    generations = [folder for folder in generations if folder.startswith("generation")]
+
     # Ensure that they are sorted by index
     generations = sorted(generations, key=lambda x: int(x.split('_')[1]))
 

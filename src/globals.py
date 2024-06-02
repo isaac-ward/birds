@@ -18,40 +18,28 @@ CHROMOSOME_DEFINITION = [
     GeneDiscrete("airfoil_handwing", 0, 2), 
     # Control parameters
     # Constant parameters
-    Gene("basis_left_const", -2.0, 2.0),
-    Gene("basis_left_poly1", -1, 1),
-    Gene("basis_left_poly2", -1, 1),
-    Gene("basis_left_poly3", -1, 1),
+    Gene("basis_left_const", -5.0, 5.0),
+    Gene("basis_left_poly1", -3, 3),
+    Gene("basis_left_poly2", -3, 3),
+    Gene("basis_left_poly3", -3, 3),
     Gene("basis_left_poly4", 0, 0),
     Gene("basis_left_poly5", 0, 0),
     # 2 sinusoids
-    Gene("basis_left_sinamp1", -3, 3),
-    Gene("basis_left_sinfreq1", -0.1, +0.1),
-    Gene("basis_left_sinamp2", -3, 3),
-    Gene("basis_left_sinfreq2", -0.1, +0.1),
-    # A sawtooth function
-    Gene("basis_left_sawtooth", 1000000, 3000000), # TODO unused! Discountinuities mess with the dynamics - no sawtooth allowed!
-    # 2 exponentials
-    Gene("basis_left_expamp1", 0, 0),
-    Gene("basis_left_exppwr1", 0, 0), 
-    Gene("basis_left_expamp2", 0, 0),
-    Gene("basis_left_exppwr2", 0, 0),
+    Gene("basis_left_sinamp1", -6, 6),
+    Gene("basis_left_sinfreq1", -0.001, +0.001),
+    Gene("basis_left_sinamp2", -6, 6),
+    Gene("basis_left_sinfreq2", -0.001, +0.001),
     # And same for the right
-    Gene("basis_right_const", -2.0, 2.0),
-    Gene("basis_right_poly1", -1, 1),
-    Gene("basis_right_poly2", -1, 1),
-    Gene("basis_right_poly3", -1, 1),
+    Gene("basis_right_const", -5.0, 5.0),
+    Gene("basis_right_poly1", -3, 3),
+    Gene("basis_right_poly2", -3, 3),
+    Gene("basis_right_poly3", -3, 3),
     Gene("basis_right_poly4", 0, 0),
     Gene("basis_right_poly5", 0, 0),
-    Gene("basis_right_sinamp1", -3, 3),
-    Gene("basis_right_sinfreq1", -0.1, +0.1),
-    Gene("basis_right_sinamp2", -3, 3),
-    Gene("basis_right_sinfreq2", -0.1, +0.1),
-    Gene("basis_right_sawtooth", 1000000, 3000000), # TODO unused! Discountinuities mess with the dynamics - no sawtooth allowed!
-    Gene("basis_right_expamp1", 0, 0),
-    Gene("basis_right_exppwr1", 0, 0),
-    Gene("basis_right_expamp2", 0, 0),
-    Gene("basis_right_exppwr2", 0, 0),
+    Gene("basis_right_sinamp1", -6, 6),
+    Gene("basis_right_sinfreq1", -0.001, +0.001),
+    Gene("basis_right_sinamp2", -6, 6),
+    Gene("basis_right_sinfreq2", -0.001, +0.001),
 ]
 
 # Simulation parameters
@@ -64,6 +52,7 @@ GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
 
 # Fitness Constants
+FITNESS_PENALTY_INVALID_STATE = -1e6
 # Define the distance threshold within which a waypoint is considered "reached"
 WAYPOINT_THRESHOLD = 1.0
 # Define the reward/penalty for reaching a waypoint

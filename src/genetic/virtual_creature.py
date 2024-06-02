@@ -150,13 +150,11 @@ class VirtualCreature:
         left_basis = [self.chromosome.basis_left_const, self.chromosome.basis_left_poly1, self.chromosome.basis_left_poly2,
                       self.chromosome.basis_left_poly3, self.chromosome.basis_left_poly4, self.chromosome.basis_left_poly5,
                       self.chromosome.basis_left_sinamp1, self.chromosome.basis_left_sinfreq1, self.chromosome.basis_left_sinamp2,
-                      self.chromosome.basis_left_sinfreq2, self.chromosome.basis_left_sawtooth, self.chromosome.basis_left_expamp1,
-                      self.chromosome.basis_left_exppwr1, self.chromosome.basis_left_expamp2, self.chromosome.basis_left_exppwr2]
+                      self.chromosome.basis_left_sinfreq2]
         right_basis = [self.chromosome.basis_right_const, self.chromosome.basis_right_poly1, self.chromosome.basis_right_poly2,
                       self.chromosome.basis_right_poly3, self.chromosome.basis_right_poly4, self.chromosome.basis_right_poly5,
                       self.chromosome.basis_right_sinamp1, self.chromosome.basis_right_sinfreq1, self.chromosome.basis_right_sinamp2,
-                      self.chromosome.basis_right_sinfreq2, self.chromosome.basis_right_sawtooth, self.chromosome.basis_right_expamp1,
-                      self.chromosome.basis_right_exppwr1, self.chromosome.basis_right_expamp2, self.chromosome.basis_right_exppwr2]
+                      self.chromosome.basis_right_sinfreq2]
         self.left_basis, self.right_basis = left_basis, right_basis
 
     def calc_wing_angle(self, t, wing_choice):
@@ -168,24 +166,21 @@ class VirtualCreature:
             raise TypeError("Input either left or right for wing_choice")
         
         # For readability let's pull out all the basis functions values
-        const, poly1, poly2, poly3, poly4, poly5, sinamp1, sinfreq1, sinamp2, sinfreq2, sawtooth, expamp1, exppwr1, expamp2, exppwr2 = basis
+        const, poly1, poly2, poly3, poly4, poly5, sinamp1, sinfreq1, sinamp2, sinfreq2 = basis
         
         # Compute the value for the wing angle
         polynomial  = const + poly1*t + poly2*t**2 + poly3*t**3 + poly4*t**4 + poly5*t**5
         sinusoid    = sinamp1*np.sin(sinfreq1*t) + sinamp2*np.sin(sinfreq2*t)
-        # TODO add rate of increase (e.g. X*sawtooth)
-        # sawtooth    = t % sawtooth
-        exponential = expamp1*np.exp(exppwr1*t) + expamp2*np.exp(exppwr2*t)
-        total = polynomial + sinusoid + sawtooth + exponential
+        total = polynomial + sinusoid
 
         # Sigmoid *2 - 1 the total so that it's in the range -1 to 1
-        result = 2 / (1 + np.exp(-total)) - 1
+        result = (2 / (1 + np.exp(-total*0.005))) - 1
 
         # Now scale it into the range [-25deg, +25deg]
-        rad25deg = 25 * np.pi / 180
+        rad25deg = np.pi * 15 / 180
         result = result * rad25deg
 
-        # print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, saw: {sawtooth:.2f}, exp: {exponential:.2f}, total: {total:.2f}, result: {result:.2f}")
+        #print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, total: {total:.2f}, result: {result:.2f}")
 
         return result        
 

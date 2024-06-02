@@ -9,7 +9,7 @@ from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
 from genetic.fitness import evaluate_fitness, select_fittest_individuals
 
-import visuals
+import visuals2 as visuals
 
 import utils
 
@@ -104,14 +104,10 @@ def solve_ga(
             # Log what this virtual creature looks like
             fittest_copy = copy.deepcopy(population[fittest_index])
             fittest_copy.reset_state()
-            visuals.render_3d_frame(
-                f"{generation_folder}/fittest_individual.png",
-                fittest_copy
-            )
-            # And save as object files
+            # Save as object files
             fittest_copy.save_as_obj(f"{generation_folder}/fittest_individual.obj", t=0)
             fittest_copy.save_as_obj(f"{generation_folder}/fittest_individual_zero_wing_angle.obj", t=-1)
-            # And point cloud
+            # And point cloud list
             fittest_copy.save_as_point_cloud(f"{generation_folder}/fittest_individual_point_cloud.obj", t=0)
             fittest_copy.save_as_point_cloud(f"{generation_folder}/fittest_individual_point_cloud_zero_wing_angle.obj", t=-1)
 
@@ -145,12 +141,12 @@ def solve_ga(
         fitness_scores_per_generation
     )
 
-    # Plot the evolution of the creatures over time
-    if log_videos:
-        visuals.render_evolution_of_creatures(
-            log_folder,
-            fittest_creature_pkl_per_generation
-        )
+    # # Plot the evolution of the creatures over time
+    # if log_videos:
+    #     visuals.render_evolution_of_creatures(
+    #         log_folder,
+    #         fittest_creature_pkl_per_generation
+    #     )
 
     # The last generation is the final population and the most optimal
     # individual in the last generation is the most optimal solution
@@ -164,9 +160,9 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     best_individual = solve_ga(
-        population_size=32,
-        num_generations=2,
-        num_parents_per_generation=10,
+        population_size=256,
+        num_generations=10,
+        num_parents_per_generation=128,
         log_folder=log_folder,
         logging=True,
         log_videos=True,

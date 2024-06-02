@@ -21,13 +21,14 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
     def valid_state_check(state_trajectory):
         # If any of the values are >> 1000, then
         # the simulation has failed and the creature 
-        # should be given a fitness of -inf
+        # should be given a fitness of -inf. Not -inf bc
+        # thta doesn't render well, but a large negative number
         for state in state_trajectory:
             if np.any(np.abs(state) > 1000000):
                 return False
             # If any of the angular velocities are too high the it's also over
-            angular_velocity_limit = 20 # rad/s
-            if np.any(np.abs(state[10:13]) > angular_velocity_limit):
+            angular_velocity_limit = 7 # rad/s, determined experimentally
+            if np.any(np.abs(state[13:15]) > angular_velocity_limit):
                 return False
         return True
 
@@ -47,10 +48,11 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             state_trajectory.append(state_vector)
 
         if not valid_state_check(state_trajectory):
-            fitness = -np.inf
-            fitness_components["forward_distance"] = -np.inf
-            fitness_components["downward_distance"] = -np.inf
-            fitness_components["average_lateral_divergence"] = -np.inf
+            fitness = globals.FITNESS_PENALTY_INVALID_STATE
+            fitness_components["forward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
+            fitness_components["downward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
+            fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+            fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
         else:
             # Now evaluate the fitness based on the trajectory
             # A fitter creature will have:
@@ -70,8 +72,8 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
             # Set hyperparameters for fitness
             forward_distance *= 50
-            downward_distance *= -25
-            average_lateral_divergence *= -500
+            downward_distance *= -40
+            average_lateral_divergence *= -50
 
             # Fitness is a mix of these, accounting for positive/negative. Note that
             # we are trying to maximize this!
@@ -81,6 +83,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             fitness_components["forward_distance"] = forward_distance
             fitness_components["downward_distance"] = downward_distance
             fitness_components["average_lateral_divergence"] = average_lateral_divergence
+            fitness_components["penalty_invalid_state"] = 0
 
     elif test_mode == 2:
         # Define the waypoints as a list of tuples (x, y, z)
