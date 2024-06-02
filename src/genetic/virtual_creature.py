@@ -66,7 +66,7 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.array([10.0, 0.0, 0.0]),
+            velocity_xyz=np.array([5.0, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),

@@ -146,7 +146,7 @@ def euler_step(t, state, virtual_creature, dt):
 
     # Update quaternions
     q1, q2, q3, q0 = quats
-    R_pqr2quats = np.array([[q0, -q3, q2],
+    R_pqr2quats = 0.5 * np.array([[q0, -q3, q2],
                            [q3, q0, -q1],
                            [-q2, q1, q0],
                            [-q1, -q2, -q3]])
@@ -180,10 +180,10 @@ def forward_step(virtual_creature, t, dt):
 
     state = virtual_creature.get_dynamics_state_vector()
 
-    k1 = euler_step(t, state, virtual_creature, dt)
+    k1 = euler_step(t,      state,                             virtual_creature, dt)
     k2 = euler_step(t+dt/2, norm_state_quats(state+(k1*dt/2)), virtual_creature, dt/2)
     k3 = euler_step(t+dt/2, norm_state_quats(state+(k2*dt/2)), virtual_creature, dt/2)
-    k4 = euler_step(t+dt, norm_state_quats(state+(k3*dt)), virtual_creature, dt)
+    k4 = euler_step(t+dt,   norm_state_quats(state+(k3*dt)),   virtual_creature, dt)
 
     state_dot = k1/6 + k2/3 + k3/3 + k4/6
 

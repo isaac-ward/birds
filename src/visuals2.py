@@ -447,6 +447,8 @@ def render_simulation_animation(
             # Scale up bounds by scale factor
             if tracking:
                 sf = 1.2
+            elif closeup:
+                sf = 1.3
             else:
                 sf = 1.05
             offset_from_center *= sf            
@@ -510,7 +512,7 @@ def render_simulation_animation(
         # Top down
         render_to_axes(axes[3], simulation_step_index, azim=-90, elev=-90, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
         # Close up view
-        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=2, hide_labels=True, closeup=True, tracking=False)
+        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.5, hide_labels=True, closeup=True, tracking=False)
 
         # Set titles
         axes[0].set_title("3D view")
