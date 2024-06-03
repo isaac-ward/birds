@@ -1,51 +1,18 @@
 import os 
 import numpy as np
 import copy
+import math
 from tqdm import tqdm
 import random
 import pickle
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
-from genetic.fitness import evaluate_fitness, select_fittest_individuals
+from genetic.fitness import parallel_evaluate_fitness, evaluate_fitness, select_fittest_individuals
 
 import visuals2 as vis
 
 import utils
-
-def parallel_evaluate_fitness(virtual_creatures, test_mode=1, return_logging_data=True):
-    """
-    A parallelized way to evaluate the fitness of a list of virtual creatures
-    """
-    results = []
-
-    # Log progress with a progress bar
-    pbar = tqdm(total=len(virtual_creatures), desc="Evaluating fitness of virtual creatures (in parallel)")
-
-    num_processes = min(len(virtual_creatures), os.cpu_count() - 8)
-    num_processes = max(num_processes, 1)
-    with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        futures = {
-            executor.submit(
-                evaluate_fitness, 
-                vc, 
-                test_mode, 
-                return_logging_data
-            ): vc for vc in virtual_creatures
-        }
-
-        # Loop over the futures as they complete
-        for future in as_completed(futures):
-            vc = futures[future]
-            try:
-                result = future.result()
-                results.append(result)
-            except Exception as e:
-                print(f"Virtual creature {vc} generated an exception: {e}")
-            pbar.update(1)
-
-    return results
 
 def solve_ga(
     population_size,
@@ -193,7 +160,7 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     population_size = 256
-    num_parents_per_generation = int(0.2 * population_size)
+    num_parents_per_generation = math.ceil(0.2 * population_size)
     best_individual = solve_ga(
         population_size=population_size,
         num_generations=10,

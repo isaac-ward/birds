@@ -423,6 +423,12 @@ def render_simulation_animation(
             ax.set_ylabel("y (+right/-left)")
             ax.set_zlabel("z (+down/-up)")
 
+            # Set the label separation to be a little more
+            label_space_factor = 30
+            ax.xaxis.labelpad = label_space_factor
+            ax.yaxis.labelpad = label_space_factor
+            ax.zaxis.labelpad = label_space_factor
+
         # Set axis limits so that everything is visible, unless we
         # were given extents in which case just use those
         if extents == [] or closeup or tracking:

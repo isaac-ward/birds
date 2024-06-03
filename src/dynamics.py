@@ -134,6 +134,7 @@ def euler_step(t, state, virtual_creature, dt):
     g_vector = R_bird2world.T @ np.array([0, 0, g])
     
     # Find state in bird frame
+    #print(uvw_dit )
     uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
     pqr_dot = np.linalg.inv(I_mat) @ (-(np.cross(pqr, (I_mat@pqr))) + M_vector).T
 
@@ -164,17 +165,6 @@ def euler_step(t, state, virtual_creature, dt):
                                pqr_dot])
     
     return state_dot
-
-    
-    # virtual_creature.update_state(
-    #     position_xyz=pos_world,
-    #     velocity_xyz=vel_world,
-    #     acceleration_xyz=acc_world,
-    #     quaternions=quats,
-    #     angular_velocity=pqr,
-    #     wing_angle_left=wing_angle_left,
-    #     wing_angle_right=wing_angle_right,
-    # )
 
 def forward_step(virtual_creature, t, dt):
     # Get current state [pos, vel, acceleration, quats, pqr]

@@ -85,6 +85,12 @@ class Chromosome:
         s = ""
         for gene in CHROMOSOME_DEFINITION:
             s += f"{gene.name} = {getattr(self, gene.name)}\n"
+        s += "\n"
+        s += "vector=["
+        for gene in CHROMOSOME_DEFINITION:
+            s += f"{getattr(self, gene.name)}, "
+        s = s[:-2]
+        s += "]\n"
         return s
     
     def crossover(self, other):

@@ -4,10 +4,10 @@ import glob
 
 from genetic.chromosome import Chromosome
 from genetic.virtual_creature import VirtualCreature
-from genetic.fitness import evaluate_fitness, select_fittest_individuals
+from genetic.fitness import parallel_evaluate_fitness, evaluate_fitness, select_fittest_individuals
 from dynamics import forward_step
 import globals
-import visuals
+import visuals2 as vis
 
 import utils
 
@@ -17,79 +17,29 @@ if __name__ == "__main__":
     log_folder = utils.make_log_folder()
     
     # Make a creature
-    # creature = VirtualCreature.random_init()
-    # basis_values_left  = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    # basis_values_right = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0]
-    # chromosome_values  = [10.0, 0.5, 1.0, 1.0, 1.0, 0.26, 0.0, 0.0]
-    basis_values_left  = [0.029844403873536818, 0.0, 0.0, 0.0, 0.0, 0.0, -0.04834760828555451, 1.6701631275283892,
-                          -0.9120491359518188, 3.036171864189841, 2040162.833271346, 0.0, 0.0, 0.0, 0.0]
-    basis_values_right = [-0.7850548644623909, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5126442494375356, 0.7091120023358926,
-                          0.5064802391843537, -2.113326207154916, 2240999.800559975, 0.0, 0.0, 0.0, 0.0]
-    chromosome_values  = [3.6415060404047597, 0.7169803703727282, 0.10973692555460701, 0.629131815019235, 0.19182697787677994,
-                          0.5054903667898508, 0.6894825293446284, 0.17814109395817931]
-    creature = VirtualCreature(Chromosome(chromosome_values+basis_values_left+basis_values_right))
-
-    # Plot what it looks like at the start
-    if True:
-        visuals.render_3d_frame(
-            f"{log_folder}/mesh.png",
-            creature
-        )
+    creature = VirtualCreature(Chromosome([10.673677623851926, 0.7877161576012752, 1.0349316770790011, 0.6639940004540399, 0.3721394664060006, 0.24825283047335453, 0, 0, 1.0724937401154104, -0.13412098274150352, -1.2960001394273934, -1.569520314455652, 0.0, 0.0, -0.6956817397975144, -0.0032504523647152016, 7.5278990975356415, -0.00733121136508792, -4.031960468216258, -0.9396496272545036, 0.5461614052229473, 0.9550588311001693, 0.0, 0.0, -2.3697120609113185, 0.00442813335919905, 2.2013231124926858, 0.006261077264949214]))
 
     # Can reset the creature's state
     creature.reset_state()
 
-    print(creature)
-
     # Run the creature for some time
     # Simulation parameters
-    simulation_time_seconds = globals.SIMULATION_T
+    simulation_time_seconds = 4
     dt = globals.DT
     t = 0
     num_steps = int(simulation_time_seconds / dt)
-    # Video parameters
-    render_video = False
-    # Set FPS so that we get realtime playback
-    playback_speed = 1.0
-    fps = 1 / (dt * playback_speed)
-    # Note the state trajectory
-    state_trajectory = []
-    for i in tqdm(range(num_steps), desc="Running forward dynamics"):
+    
+    # Evaluate the fitness of each individual in the population
+    evaluate_fitness_results = parallel_evaluate_fitness([creature], test_mode=1)
+    fitness_scores     = [result[0] for result in evaluate_fitness_results]
+    # Fitness components is a list of dicts, but we want a dict of lists
+    fitness_components = [result[1] for result in evaluate_fitness_results]
+    fitness_components = {key: [dic[key] for dic in fitness_components] for key in fitness_components[0]}
+    state_trajectories = [result[2] for result in evaluate_fitness_results]
 
-        # Run the dynamics forward
-        forward_step(creature, t, dt=dt)
-        t += dt
-
-        # Get the state vector and log
-        state_vector = creature.get_state_vector()
-        state_trajectory.append(state_vector)
-
-        # Plot every frame so that we can see what's going on
-        if render_video:
-            visuals.render_3d_frame(
-                f"{log_folder}/frames/{i}.png",
-                creature,
-                extents=[(-5,40), (-8,8), (-5,40)],
-                past_3d_positions=state_trajectory,
-                current_time_s=i*dt,
-                total_time_s=simulation_time_seconds
-            )
-        
-    # Plot the state trajectory
-    visuals.plot_state_trajectory(
+    # Log the state trajectories for the best individual
+    vis.plot_state_trajectory(
         f"{log_folder}/state_trajectory.png",
-        state_trajectory,
-        VirtualCreature.get_state_vector_labels()
+        state_trajectory=state_trajectories[0]
     )
 
-    # Plot a video of the creature from the frames
-    if render_video:
-        # Files are called *.png, so we need to sort them by the number in the filename,
-        # using os 
-        files = glob.glob(f"{log_folder}/frames/*.png")
-        files_sorted = sorted(files, key=lambda x: int(os.path.basename(x).split(".")[0]))
-        visuals.sequence_frames_to_video(
-            files_sorted,
-            f"{log_folder}/video.mp4",
-            fps=fps
-        )

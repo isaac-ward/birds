@@ -1,10 +1,44 @@
 import numpy as np
 from scipy.stats import rv_discrete
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
 
 from dynamics import forward_step
 import globals
 
+def parallel_evaluate_fitness(virtual_creatures, test_mode=1, return_logging_data=True):
+    """
+    A parallelized way to evaluate the fitness of a list of virtual creatures
+    """
+    results = []
+
+    # Log progress with a progress bar
+    pbar = tqdm(total=len(virtual_creatures), desc="Evaluating fitness of virtual creature(s) (in parallel)")
+
+    num_processes = min(len(virtual_creatures), os.cpu_count() - 4)
+    num_processes = max(num_processes, 1)
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        futures = {
+            executor.submit(
+                evaluate_fitness, 
+                vc, 
+                test_mode, 
+                return_logging_data
+            ): vc for vc in virtual_creatures
+        }
+
+        # Loop over the futures as they complete
+        for future in as_completed(futures):
+            vc = futures[future]
+            try:
+                result = future.result()
+                results.append(result)
+            except Exception as e:
+                print(f"Virtual creature {vc} generated an exception: {e}")
+            pbar.update(1)
+
+    return results
 
 def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 

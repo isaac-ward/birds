@@ -14,8 +14,8 @@ CHROMOSOME_DEFINITION = [
     Gene("taper_handwing", 0.1, 0.5),
     Gene("norm_COG_position", 0.248, 0.252), # 0.25 is ideal
     # These are indices into a list of airfoil names
-    GeneDiscrete("airfoil_armwing", 0, 2), 
-    GeneDiscrete("airfoil_handwing", 0, 2), 
+    GeneDiscrete("airfoil_armwing", 0, 0), # 2
+    GeneDiscrete("airfoil_handwing", 0, 0), # 2
     # Control parameters
     # Constant parameters
     Gene("basis_left_const", -5.0, 5.0),
@@ -43,8 +43,8 @@ CHROMOSOME_DEFINITION = [
 ]
 
 # Simulation parameters
-SIMULATION_T = 16
-DT = 0.001
+SIMULATION_T = 16 # may be cut short if unstable
+DT = 0.0001
 
 # Global aerodynamic parameters
 AIR_DENSITY = 1.225 #kg/m^3
