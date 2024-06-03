@@ -91,6 +91,7 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             if not valid_state_check(state_vector):
                 fitness = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["planar_distance_travelled"] = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["forward_displacement"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["downwards_position"] = globals.FITNESS_PENALTY_INVALID_STATE
                 #fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
@@ -119,6 +120,9 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
         differences_xy = np.diff(np.array([state[0:2] for state in state_trajectory]), axis=0)
         planar_distance_travelled = np.sum(np.linalg.norm(differences_xy, axis=1))
 
+        # Incentivize the creature to move as far in the x-direction as possible
+        forward_displacement = np.max([state[0] for state in state_trajectory])
+
         # Penalize for going off course (in the y direction)
         # This will be >= 0. Remeber to abs
         #average_lateral_divergence = np.mean(np.abs([state[1] for state in state_trajectory]))
@@ -135,10 +139,12 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
         # Fitness is a mix of these, accounting for positive/negative. Note that
         # we are trying to maximize this!
-        fitness = 10 * planar_distance_travelled - 500 * downwards_position - 400 * max_angular_divergence
+        # fitness = 10 * planar_distance_travelled - 500 * downwards_position - 400 * max_angular_divergence
+        fitness = 10 * forward_displacement - 10 * downwards_position
 
         # Store the fitness components
         fitness_components["planar_distance_travelled"] = planar_distance_travelled
+        fitness_components["forward_displacement"] = forward_displacement
         fitness_components["downwards_position"] = downwards_position
         #fitness_components["average_lateral_divergence"] = average_lateral_divergence
         fitness_components["max_angular_divergence"] = max_angular_divergence

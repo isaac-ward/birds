@@ -50,6 +50,7 @@ DT = 0.001
 AIR_DENSITY = 1.225 #kg/m^3
 GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
+MAX_ANGULAR_VELOCITY = 7 #rad/s
 
 # Fitness Constants
 FITNESS_PENALTY_INVALID_STATE = -1e4
@@ -76,3 +77,29 @@ AIRFOIL_DATABASE = {
 def wrapRads(angle:float) -> float:
     wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi
     return wrapped_angle
+
+def quaternion_to_euler(quat):
+    """
+    Convert a quaternion into Euler angles (roll, pitch, yaw).
+    Quaternion format: [q1, q2, q3, q0] where q0 is the scalar part.
+    """
+    q1, q2, q3, q0 = quat
+
+    # Roll (x-axis rotation)
+    sinr_cosp = 2 * (q0 * q1 + q2 * q3)
+    cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
+
+    # Pitch (y-axis rotation)
+    sinp = 2 * (q0 * q2 - q3 * q1)
+    if np.abs(sinp) >= 1:
+        pitch = np.sign(sinp) * np.pi / 2  # Use 90 degrees if out of range
+    else:
+        pitch = np.arcsin(sinp)
+
+    # Yaw (z-axis rotation)
+    siny_cosp = 2 * (q0 * q3 + q1 * q2)
+    cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+    return np.array([roll, pitch, yaw])
