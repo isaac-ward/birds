@@ -239,7 +239,7 @@ class VirtualCreature:
         s += "----------------\n"
         return s
     
-    def get_mesh_verts_and_faces(self, t):
+    def get_mesh_verts_and_faces(self, t, wing_angle_emphasis_multiplier=1):
         
         # These are the genes
         # Gene("wingspan", 0.0, 10.0),
@@ -334,8 +334,8 @@ class VirtualCreature:
                 [-np.sin(angle), 0, np.cos(angle)]
             ])
 
-        wing_angle_left = self.calc_wing_angle(t, "left")
-        wing_angle_right = self.calc_wing_angle(t, "right")
+        wing_angle_left = self.calc_wing_angle(t, "left") * wing_angle_emphasis_multiplier
+        wing_angle_right = self.calc_wing_angle(t, "right") * wing_angle_emphasis_multiplier
         if t == -1:
             # If we're at t=-1, we want to set the wing angles to zero
             wing_angle_left = 0

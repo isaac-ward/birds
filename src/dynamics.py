@@ -13,11 +13,11 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     [dcLdAlpha, alpha_min, alpha_max, cD0] = globals.AIRFOIL_DATABASE[airfoil][:-1]
     cL = dcLdAlpha * alpha
 
-    if alpha < alpha_min or alpha > alpha_max:
-        cL = 0
-
     e = 1.78 * (1 - 0.045 * AR**0.68) - 0.64
     cD = cD0 + cL**2 / (np.pi * e * AR)
+
+    if alpha < alpha_min or alpha > alpha_max:
+        cL = 0
 
     L = 0.5*rho_inf*cL*S*V_inf**2
     D = 0.5*rho_inf*cD*S*V_inf**2

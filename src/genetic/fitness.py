@@ -18,12 +18,24 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
     state_trajectory = []
     fitness_components = {}
 
-    def valid_state_check(state_trajectory):
+    def valid_state_check(state):
         # If any of the values are >> 1000, then
         # the simulation has failed 
-        for state in state_trajectory:
-            if np.any(np.abs(state) > 1000000):
-                return False
+        if np.any(np.abs(state) > 1000000):
+            return False
+            
+        # If the creature goes too far down, then it's over
+        if state[2] > 50:
+            return False
+        
+        # If the creature spins too much, then it's over
+        angular_velocity_limit = 7
+        if np.any(np.abs(state[13:16]) > angular_velocity_limit):
+            return False
+        
+        # If the creature pitches too far up, then it's over
+        # TODO
+        
         return True
 
     if test_mode == 1:
@@ -39,58 +51,62 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
 
             # Get the state vector and log
             state_vector = virtual_creature.get_state_vector()
+
+            # If we reach some certain termination conditions, then assign fitnesses
+            # and break out of the loop
+            if not valid_state_check(state_vector):
+                fitness = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["planar_distance_travelled"] = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["downwards_position"] = globals.FITNESS_PENALTY_INVALID_STATE
+                #fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
+                break
+
+            # Otherwise log it
             state_trajectory.append(state_vector)
 
-        if not valid_state_check(state_trajectory):
-            fitness = globals.FITNESS_PENALTY_INVALID_STATE
-            fitness_components["forward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
-            fitness_components["downward_distance"] = globals.FITNESS_PENALTY_INVALID_STATE
-            fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
-            fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
-            fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
-        else:
-            # Now evaluate the fitness based on the trajectory
-            # A fitter creature will have:
-            # - gone forward more in the +x direction
-            # - gone down less in the +z direction
-            # - goes straight
+        # Now evaluate the fitness based on the trajectory
+        # A fitter creature will have:
+        # - gone forward more in the +x direction
+        # - gone down less in the +z direction
+        # - goes straight
 
-            # This is basically just a glide ratio
-            # This should be positive
-            forward_distance = state_trajectory[-1][0] - state_trajectory[0][0]
-            # This should be positive
-            downward_distance = state_trajectory[-1][2] - state_trajectory[0][2]
+        # This is basically just a glide ratio
+        # This should be positive
+        #forward_position  = state_trajectory[-1][0] - state_trajectory[0][0]
+        # This should be positive
+        downwards_position = state_trajectory[-1][2] - state_trajectory[0][2]
 
-            # Penalize for going off course (in the y direction)
-            # This will be >= 0. Remeber to abs
-            average_lateral_divergence = np.mean(np.abs([state[1] for state in state_trajectory]))
+        # We want the creature to move in the xy plane maximally, so tally
+        # up the distance travelled in the xy plane over all steps
+        differences_xy = np.diff(np.array([state[0:2] for state in state_trajectory]), axis=0)
+        planar_distance_travelled = np.sum(np.linalg.norm(differences_xy, axis=1))
 
-            # Penalize for going beyond +- 90 degrees pitch
-            #qx, qy, qz, qw = np.array([state[9:13] for state in state_trajectory])
-            #euler_angles = 
+        # Penalize for going off course (in the y direction)
+        # This will be >= 0. Remeber to abs
+        #average_lateral_divergence = np.mean(np.abs([state[1] for state in state_trajectory]))
 
-            # Penalize for spinning too fast
-            max_angular_divergence = \
-                np.mean(np.abs([state[13] for state in state_trajectory])) + \
-                np.mean(np.abs([state[14] for state in state_trajectory])) + \
-                np.mean(np.abs([state[15] for state in state_trajectory]))
+        # Penalize for going beyond +- 90 degrees pitch
+        #qx, qy, qz, qw = np.array([state[9:13] for state in state_trajectory])
+        #euler_angles = 
 
-            # Set hyperparameters for fitness
-            forward_distance *= 50
-            downward_distance *= -40
-            average_lateral_divergence *= -50
-            max_angular_divergence *= -400
+        # Penalize for spinning too fast
+        max_angular_divergence = \
+            np.mean(np.abs([state[13] for state in state_trajectory])) + \
+            np.mean(np.abs([state[14] for state in state_trajectory])) + \
+            np.mean(np.abs([state[15] for state in state_trajectory]))
 
-            # Fitness is a mix of these, accounting for positive/negative. Note that
-            # we are trying to maximize this!
-            fitness = forward_distance + downward_distance + average_lateral_divergence + max_angular_divergence
+        # Fitness is a mix of these, accounting for positive/negative. Note that
+        # we are trying to maximize this!
+        fitness = 10 * planar_distance_travelled - 500 * downwards_position - 400 * max_angular_divergence
 
-            # Store the fitness components
-            fitness_components["forward_distance"] = forward_distance
-            fitness_components["downward_distance"] = downward_distance
-            fitness_components["average_lateral_divergence"] = average_lateral_divergence
-            fitness_components["max_angular_divergence"] = max_angular_divergence
-            fitness_components["penalty_invalid_state"] = 0
+        # Store the fitness components
+        fitness_components["planar_distance_travelled"] = planar_distance_travelled
+        fitness_components["downwards_position"] = downwards_position
+        #fitness_components["average_lateral_divergence"] = average_lateral_divergence
+        fitness_components["max_angular_divergence"] = max_angular_divergence
+        fitness_components["penalty_invalid_state"] = 0
 
     elif test_mode == 2:
         # Define the waypoints as a list of tuples (x, y, z)

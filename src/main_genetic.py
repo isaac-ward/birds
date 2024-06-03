@@ -154,7 +154,8 @@ def solve_ga(
                 vis.render_simulation_of_creature(
                     generation_folder, 
                     fittest_copy,
-                    test_mode=fitness_test_mode
+                    state_trajectory=state_trajectories[fittest_index],
+                    #test_mode=fitness_test_mode
                 )
 
         # Replace the old population with the new generation
@@ -192,7 +193,7 @@ if __name__ == "__main__":
     
     # Run the genetic algorithm to solve the problem
     population_size = 256
-    num_parents_per_generation = int(0.33 * population_size)
+    num_parents_per_generation = int(0.2 * population_size)
     best_individual = solve_ga(
         population_size=population_size,
         num_generations=10,

@@ -366,7 +366,7 @@ def render_simulation_animation(
         sim_current_time_s = simulation_step_index * globals.DT
         
         # Get the vertices and faces and show in matplotlib
-        vertices, faces = virtual_creature.get_mesh_verts_and_faces(sim_current_time_s)
+        vertices, faces = virtual_creature.get_mesh_verts_and_faces(sim_current_time_s, wing_angle_emphasis_multiplier=4.0)
 
         # Need to apply the translation and rotation to the vertices
         # before rendering. Position is x,y,z and rotation is euler
@@ -448,7 +448,7 @@ def render_simulation_animation(
             if tracking:
                 sf = 1.2
             elif closeup:
-                sf = 1.3
+                sf = 0.9
             else:
                 sf = 1.05
             offset_from_center *= sf            
@@ -484,8 +484,9 @@ def render_simulation_animation(
 
     # We don't want to render every step of the simulation, only
     # the ones that will be visible in the video
-    num_sim_steps = int(globals.SIMULATION_T / globals.DT)
-    num_render_steps = int(globals.SIMULATION_T * fps) 
+    num_sim_steps = len(state_trajectory)
+    T_actual = num_sim_steps * globals.DT
+    num_render_steps = int(T_actual * fps) 
 
     # We'll track progress like so
     pbar = tqdm(total=num_render_steps, desc="Rendering simulation animation")
@@ -504,15 +505,15 @@ def render_simulation_animation(
         # Clear and redraw axes
         for ax in axes:
             ax.cla()  # Clear the current axes
-        render_to_axes(axes[0], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.1, hide_labels=False, closeup=False, tracking=False)
+        render_to_axes(axes[0], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=0.9, hide_labels=False, closeup=False, tracking=False)
         # Behind view
-        render_to_axes(axes[1], simulation_step_index, azim=0, elev=180, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
+        render_to_axes(axes[1], simulation_step_index, azim=0, elev=180, roll=0, zoom=1.4, hide_labels=True, closeup=False, tracking=True)
         # Right side view
-        render_to_axes(axes[2], simulation_step_index, azim=-90, elev=180, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
+        render_to_axes(axes[2], simulation_step_index, azim=-90, elev=180, roll=0, zoom=1.4, hide_labels=True, closeup=False, tracking=True)
         # Top down
-        render_to_axes(axes[3], simulation_step_index, azim=-90, elev=-90, roll=0, zoom=1.5, hide_labels=True, closeup=False, tracking=True)
+        render_to_axes(axes[3], simulation_step_index, azim=-90, elev=-90, roll=0, zoom=1.4, hide_labels=True, closeup=False, tracking=True)
         # Close up view
-        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.5, hide_labels=True, closeup=True, tracking=False)
+        render_to_axes(axes[4], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.2, hide_labels=True, closeup=True, tracking=False)
 
         # Set titles
         axes[0].set_title("3D view")
@@ -525,7 +526,7 @@ def render_simulation_animation(
         def plot_text_y_down(y, text):
             axes[0].text2D(0, y, text, transform=axes[0].transAxes, fontsize=12, color='black', ha='right')
         plot_text_y_down(1 - 0.05, f"t={simulation_step_index * globals.DT:.4f} s")
-        plot_text_y_down(1 - 0.1, f"T={globals.SIMULATION_T:.4f} s")  
+        plot_text_y_down(1 - 0.1, f"T={T_actual:.4f} s")  
 
     # Create the animation object
     pbar = tqdm(total=num_render_steps, desc="Rendering simulation animation")
@@ -546,7 +547,7 @@ def save_animation(fig, ani, filepath_out, fps=25):
     fig.clf()
     plt.close(fig)
 
-def render_simulation_of_creature(log_folder, creature, test_mode, fps=25):
+def render_simulation_of_creature(log_folder, creature, state_trajectory, fps=25):
     # Make a copy of the creature and reset its state
     creature = copy.deepcopy(creature)
     creature.reset_state()
@@ -560,7 +561,7 @@ def render_simulation_of_creature(log_folder, creature, test_mode, fps=25):
     num_render_steps = int(globals.SIMULATION_T * fps)
 
     # Do the simulation
-    fitness, fitness_components, state_trajectory = evaluate_fitness(creature, test_mode=test_mode, return_logging_data=True)
+    #fitness, fitness_components, state_trajectory = evaluate_fitness(creature, test_mode=test_mode, return_logging_data=True)
 
     # Now we know the extents
     extents = [
