@@ -83,13 +83,17 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     quats = state[6:10] # q1, q2, q3, q0
     pqr = state[10:13]
 
-    euler_angles = quaternion_to_euler(quats)
-    if verbose: print("euler_angles (deg)", np.degrees(euler_angles))
+    euler_angles = np.degrees(quaternion_to_euler(quats))
+    if verbose: print("euler_angles (deg)", euler_angles)
 
     # Convert frome bird frame to world frame
     R_bird2world = get_bird2world(quats)
     
     uvw = R_bird2world.T @ vel_world
+    
+    # Enforce non-negative velocities
+    if uvw[0] < 0: uvw[0] = 0
+
     if verbose: print("uvw", uvw)
 
     # Pull simulation constants
@@ -171,10 +175,12 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     if verbose: print("F_vector", F_vector)
 
     # Find moments in bird frame
-    M_x = (F_z_right - F_z_left) * z_COL_position
+    M_x, M_y, M_z, = 0.0, 0.0, 0.0
+    # M_x = (F_z_right - F_z_left) * z_COL_position
     M_y = (-F_z) * (COG_position - x_COL_position)
-    M_z = (F_x_left - F_x_right) * z_COL_position
+    # M_z = (F_x_left - F_x_right) * z_COL_position
     M_vector = np.array([M_x, M_y, M_z])
+    # M_vector = np.array([0.0, 0.0, 0.0])
     g_vector = R_bird2world.T @ np.array([0, 0, g])
     
     # Find state in bird frame
@@ -190,6 +196,9 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     # Update state in bird frame
     uvw += uvw_dot*dt
     pqr += pqr_dot*dt
+
+    # Enforce non-negative velocities
+    if uvw[0] < 0: uvw[0] = 0
 
     # Convert to world frame
     vel_world = R_bird2world @ uvw
@@ -250,8 +259,8 @@ def forward_step(virtual_creature, t, dt):
     # if verbose: print("k3", k3)
     # if verbose: print("k4", k4)
     # if verbose: print("state_dot", state_dot)
-    if verbose: print("vel_measure", np.linalg.norm(new_state[3:6]) * dt)
-    if verbose: print("pos_measure", np.linalg.norm(state[0:3] - new_state[0:3]))
+    # if verbose: print("vel_measure", np.linalg.norm(new_state[3:6]) * dt)
+    # if verbose: print("pos_measure", np.linalg.norm(state[0:3] - new_state[0:3]))
 
     # Extract state
     pos_world = new_state[0:3]
