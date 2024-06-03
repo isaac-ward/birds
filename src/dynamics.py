@@ -179,8 +179,10 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     
     # Find state in bird frame
     #print(uvw_dit )
-    uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
-    pqr_dot = np.linalg.inv(I_mat) @ (-(np.cross(pqr, (I_mat@pqr))) + M_vector).T
+    # uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
+    # pqr_dot = np.linalg.inv(I_mat) @ (-(np.cross(pqr, (I_mat@pqr))) + M_vector).T
+    uvw_dot = 1/bird_mass * (F_vector) + g_vector
+    pqr_dot = np.linalg.inv(I_mat) @ (M_vector)
 
     if verbose: print("uvw_dot", uvw_dot)
     if verbose: print("pqr_dot", pqr_dot)
@@ -193,10 +195,10 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     vel_world = R_bird2world @ uvw
     acc_world = R_bird2world @ uvw_dot
 
-    # Place a cap on the acceleration
-    max_accel_norm = 20
-    if np.linalg.norm(acc_world) > max_accel_norm:
-        acc_world *= max_accel_norm / np.linalg.norm(acc_world)
+    # # Place a cap on the acceleration
+    # max_accel_norm = 20
+    # if np.linalg.norm(acc_world) > max_accel_norm:
+    #     acc_world *= max_accel_norm / np.linalg.norm(acc_world)
 
     if verbose: print("vel_world", vel_world)
     if verbose: print("acc_world", acc_world)
