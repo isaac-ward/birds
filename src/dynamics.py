@@ -18,6 +18,7 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
 
     if alpha < alpha_min or alpha > alpha_max:
         cL = 0
+        cD = np.abs(0.5 * np.sin(alpha)) + cD0
 
     L = 0.5*rho_inf*cL*S*V_inf**2
     D = 0.5*rho_inf*cD*S*V_inf**2
