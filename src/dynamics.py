@@ -16,10 +16,10 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
     e = 1.78 * (1 - 0.045 * AR**0.68) - 0.64
     cD = cD0 + cL**2 / (np.pi * e * AR)
 
-    if alpha < alpha_min or alpha > alpha_max:
-        creature.has_stalled = True
+    # if alpha < alpha_min or alpha > alpha_max:
+    #     creature.has_stalled = True
 
-    if creature.has_stalled == True:
+    if alpha < alpha_min or alpha > alpha_max:
         cL = 0
         cD = np.abs(0.5 * np.sin(alpha)) + cD0
 
@@ -90,10 +90,12 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
     bird_mass, I_mat = virtual_creature.bird_mass, virtual_creature.I_mat
 
     # Find angle of attack & V_inf
-    V_inf = np.linalg.norm(uvw)
+    # V_inf = np.linalg.norm(uvw)
+    V_inf = np.linalg.norm([uvw[0], uvw[2]])
     alpha_left = wa_left + np.arctan2(uvw[2],uvw[0])
     alpha_right = wa_right + np.arctan2(uvw[2],uvw[0])
     beta = np.arcsin(uvw[1]/V_inf)
+    # beta = 0.0
 
     if verbose: print("alpha_left", alpha_left)
     if verbose: print("alpha_right", alpha_right)
@@ -157,9 +159,9 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
 
     # Find moments in bird frame
     M_x, M_y, M_z, = 0.0, 0.0, 0.0
-    # M_x = (F_z_right - F_z_left) * z_COL_position
+    M_x = (F_z_right - F_z_left) * z_COL_position
     M_y = (-F_z) * (COG_position - x_COL_position)
-    # M_z = (F_x_left - F_x_right) * z_COL_position
+    M_z = (F_x_left - F_x_right) * z_COL_position
     M_vector = np.array([M_x, M_y, M_z])
     # M_vector = np.array([0.0, 0.0, 0.0])
     g_vector = R_bird2world.T @ np.array([0, 0, g])
@@ -204,6 +206,8 @@ def euler_step(t, state, virtual_creature, dt, verbose=False):
                            [-q2, q1, q0],
                            [-q1, -q2, -q3]])
     quats_dot = R_pqr2quats @ pqr
+
+    # print(f"M_x = {(F_z_right - F_z_left) * z_COL_position}, t = {t}, acceleration = {acc_world}, beta = {np.degrees(beta)}")
 
     # # Update world position/angles
     # pos_world += dt*vel_world
