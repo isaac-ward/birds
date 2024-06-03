@@ -95,6 +95,8 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
                 #fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
+
+                #print(f"Simulation went unstable at step={i}, time={t}")
                 break
 
             # Otherwise log it

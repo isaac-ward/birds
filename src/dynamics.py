@@ -3,8 +3,8 @@ import globals
 
 def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, rho_inf:float):
     # inputs:
-    # - airfoil: airfoilf name
-    # - alpha: angle of attack (deg)
+    # - airfoil: airfoil name
+    # - alpha: angle of attack (rad)
     # - AR: aspect ratio
     # Outputs:
     # - L: lift (N)
@@ -18,10 +18,11 @@ def get_aero_data(airfoil: str, alpha: float, AR: float, S:float, V_inf:float, r
 
     if alpha < alpha_min or alpha > alpha_max:
         cL = 0
-        # cD = np.abs(0.5 * np.sin(alpha)) + cD0
+        cD = np.abs(0.5 * np.sin(alpha)) + cD0
 
     L = 0.5*rho_inf*cL*S*V_inf**2
     D = 0.5*rho_inf*cD*S*V_inf**2
+
     return L, D
 
 def get_bird2world(quats):
@@ -36,13 +37,41 @@ def norm_state_quats(state):
     state[6:10] *= 1/np.linalg.norm(state[6:10])
     return state
 
-def euler_step(t, state, virtual_creature, dt):
+def quaternion_to_euler(quat):
+    """
+    Convert a quaternion into Euler angles (roll, pitch, yaw).
+    Quaternion format: [q1, q2, q3, q0] where q0 is the scalar part.
+    """
+    q1, q2, q3, q0 = quat
+
+    # Roll (x-axis rotation)
+    sinr_cosp = 2 * (q0 * q1 + q2 * q3)
+    cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
+
+    # Pitch (y-axis rotation)
+    sinp = 2 * (q0 * q2 - q3 * q1)
+    if np.abs(sinp) >= 1:
+        pitch = np.sign(sinp) * np.pi / 2  # Use 90 degrees if out of range
+    else:
+        pitch = np.arcsin(sinp)
+
+    # Yaw (z-axis rotation)
+    siny_cosp = 2 * (q0 * q3 + q1 * q2)
+    cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+    return np.array([roll, pitch, yaw])
+
+def euler_step(t, state, virtual_creature, dt, verbose=False):
     """
     Takes a virtual creature and updates its state by one step based on
     it's current state and the aerodynamic environment
 
     dt units are in seconds
     """
+
+    if verbose: print("t", t)
 
     # Get wing angle
     wa_left = virtual_creature.calc_wing_angle(t, "left")
@@ -51,13 +80,17 @@ def euler_step(t, state, virtual_creature, dt):
     # +x is forward, +y is up, +z is right
     pos_world = state[0:3]
     vel_world = state[3:6]
-    quats = state[6:10]
+    quats = state[6:10] # q1, q2, q3, q0
     pqr = state[10:13]
+
+    euler_angles = quaternion_to_euler(quats)
+    if verbose: print("euler_angles (deg)", np.degrees(euler_angles))
 
     # Convert frome bird frame to world frame
     R_bird2world = get_bird2world(quats)
     
     uvw = R_bird2world.T @ vel_world
+    if verbose: print("uvw", uvw)
 
     # Pull simulation constants
     rho_inf, rho_bird, g = globals.AIR_DENSITY, globals.BIRD_DENSITY, globals.GRAVITY
@@ -81,7 +114,11 @@ def euler_step(t, state, virtual_creature, dt):
     alpha_right = wa_right + np.arctan2(uvw[2],uvw[0])
     beta = np.arcsin(uvw[1]/V_inf)
 
-    # Get aeroydenmic forces
+    if verbose: print("alpha_left", alpha_left)
+    if verbose: print("alpha_right", alpha_right)
+    if verbose: print("beta", beta)
+
+    # Get aerodynamic forces
     lift_aw_left, drag_aw_left = get_aero_data(airfoil=airfoil_armwing,
                                             alpha=alpha_left,
                                             AR=AR_aw,
@@ -117,6 +154,11 @@ def euler_step(t, state, virtual_creature, dt):
     drag_left = drag_aw_left + drag_hw_left
     drag_right = drag_aw_right + drag_hw_right
 
+    if verbose: print("lift_left", lift_left)
+    if verbose: print("lift_right", lift_right)
+    if verbose: print("drag_left", drag_left)
+    if verbose: print("drag_right", drag_right)
+
     F_x_left = lift_left*np.sin(alpha_left) - drag_left*np.cos(beta)*np.cos(alpha_left)
     F_x_right = lift_right*np.sin(alpha_right) - drag_right*np.cos(beta)*np.cos(alpha_right)
     F_x = F_x_left + F_x_right
@@ -125,6 +167,8 @@ def euler_step(t, state, virtual_creature, dt):
     F_z_right = -lift_right*np.cos(alpha_right) - drag_right*np.cos(beta)*np.sin(alpha_right) 
     F_z = F_z_left + F_z_right
     F_vector = np.array([F_x, F_y, F_z])
+
+    if verbose: print("F_vector", F_vector)
 
     # Find moments in bird frame
     M_x = (F_z_right - F_z_left) * z_COL_position
@@ -138,6 +182,9 @@ def euler_step(t, state, virtual_creature, dt):
     uvw_dot = 1/bird_mass * (-np.cross(pqr, uvw) + F_vector) + g_vector
     pqr_dot = np.linalg.inv(I_mat) @ (-(np.cross(pqr, (I_mat@pqr))) + M_vector).T
 
+    if verbose: print("uvw_dot", uvw_dot)
+    if verbose: print("pqr_dot", pqr_dot)
+
     # Update state in bird frame
     uvw += uvw_dot*dt
     pqr += pqr_dot*dt
@@ -145,6 +192,16 @@ def euler_step(t, state, virtual_creature, dt):
     # Convert to world frame
     vel_world = R_bird2world @ uvw
     acc_world = R_bird2world @ uvw_dot
+
+    # Place a cap on the acceleration
+    max_accel_norm = 20
+    if np.linalg.norm(acc_world) > max_accel_norm:
+        acc_world *= max_accel_norm / np.linalg.norm(acc_world)
+
+    if verbose: print("vel_world", vel_world)
+    if verbose: print("acc_world", acc_world)
+    #if verbose: print("pos change", np.linalg.norm(vel_world) * dt)
+    if verbose: print("----")
 
     # Update quaternions
     q1, q2, q3, q0 = quats
@@ -171,7 +228,10 @@ def forward_step(virtual_creature, t, dt):
 
     state = virtual_creature.get_dynamics_state_vector()
 
-    k1 = euler_step(t,      state,                             virtual_creature, dt)
+    #verbose = (t % (dt * 100) < 1e-5) and (t > 2.86)
+    verbose = False
+
+    k1 = euler_step(t,      state,                             virtual_creature, dt, verbose=verbose)
     k2 = euler_step(t+dt/2, norm_state_quats(state+(k1*dt/2)), virtual_creature, dt/2)
     k3 = euler_step(t+dt/2, norm_state_quats(state+(k2*dt/2)), virtual_creature, dt/2)
     k4 = euler_step(t+dt,   norm_state_quats(state+(k3*dt)),   virtual_creature, dt)
@@ -179,6 +239,17 @@ def forward_step(virtual_creature, t, dt):
     state_dot = k1/6 + k2/3 + k3/3 + k4/6
 
     new_state = state_dot * dt + state
+
+    # verbose = (t > 2.86 and t < 3) and t % (dt * 100) < 1e-5
+    # if verbose: print("t", t)
+    # if verbose: print("state", state)
+    # if verbose: print("k1", k1)
+    # if verbose: print("k2", k2)
+    # if verbose: print("k3", k3)
+    # if verbose: print("k4", k4)
+    # if verbose: print("state_dot", state_dot)
+    if verbose: print("vel_measure", np.linalg.norm(new_state[3:6]) * dt)
+    if verbose: print("pos_measure", np.linalg.norm(state[0:3] - new_state[0:3]))
 
     # Extract state
     pos_world = new_state[0:3]
