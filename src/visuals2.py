@@ -366,13 +366,15 @@ def render_simulation_animation(
         sim_current_time_s = simulation_step_index * globals.DT
         
         # Get the vertices and faces and show in matplotlib
-        vertices, faces = virtual_creature.get_mesh_verts_and_faces(sim_current_time_s, wing_angle_emphasis_multiplier=4.0)
+        vertices, faces = virtual_creature.get_mesh_verts_and_faces(sim_current_time_s, wing_angle_emphasis_multiplier=16.0)
 
         # Need to apply the translation and rotation to the vertices
         # before rendering. Position is x,y,z and rotation is euler
         # angles in radians about x,y,z axes
         position = curr_state_trajectory[-1,:3]
         rotation = curr_state_trajectory[-1,9:13]
+        # Ensure normalized
+        rotation = rotation / np.linalg.norm(rotation)
         #print(f"\n\nPosition: {position}, rotation: {rotation}")
         # For the close up we don't want to do the transformation
         if closeup:

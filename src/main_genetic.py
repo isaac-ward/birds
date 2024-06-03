@@ -159,11 +159,11 @@ if __name__ == "__main__":
     log_folder = utils.make_log_folder()
     
     # Run the genetic algorithm to solve the problem
-    population_size = 32
+    population_size = 1024
     num_parents_per_generation = math.ceil(0.2 * population_size)
     best_individual = solve_ga(
         population_size=population_size,
-        num_generations=2,
+        num_generations=10,
         num_parents_per_generation=num_parents_per_generation,
         log_folder=log_folder,
         logging=True,

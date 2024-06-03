@@ -7,39 +7,39 @@ from genetic.chromosome import GeneDiscrete
 # and their feasible ranges
 CHROMOSOME_DEFINITION = [
     # Gene(gene_name, min_val, max_val)
-    Gene("wingspan", 5, 20),
+    Gene("wingspan", 5, 10),
     Gene("norm_wrist_position", 0.2, 0.8),
     Gene("wing_root_chord", 1.0, 1.2),
     Gene("taper_armwing", 0.5, 1.0),
     Gene("taper_handwing", 0.1, 0.5),
     Gene("norm_COG_position", 0.248, 0.252), # 0.25 is ideal
     # These are indices into a list of airfoil names
-    GeneDiscrete("airfoil_armwing", 0, 2), # 2
-    GeneDiscrete("airfoil_handwing", 0, 2), # 2
+    GeneDiscrete("airfoil_armwing", 0, 0), # 2
+    GeneDiscrete("airfoil_handwing", 0, 0), # 2
     # Control parameters
     # Constant parameters
-    Gene("basis_left_const", -5.0, 5.0),
-    Gene("basis_left_poly1", -3, 3),
-    Gene("basis_left_poly2", -3, 3),
-    Gene("basis_left_poly3", -3, 3),
+    Gene("basis_left_const", -10.0, 10.0),
+    Gene("basis_left_poly1", -7.0, 7.0),
+    Gene("basis_left_poly2", -4.0, 4.0),
+    Gene("basis_left_poly3", -2.0, 2.0),
     Gene("basis_left_poly4", 0, 0),
     Gene("basis_left_poly5", 0, 0),
     # 2 sinusoids
-    Gene("basis_left_sinamp1", -8, 8),
-    Gene("basis_left_sinfreq1", -0.01, +0.01),
-    Gene("basis_left_sinamp2", -8, 8),
-    Gene("basis_left_sinfreq2", -0.01, +0.01),
+    Gene("basis_left_sinamp1", 0, 0),
+    Gene("basis_left_sinfreq1", 0, 0),
+    Gene("basis_left_sinamp2", 0, 0),
+    Gene("basis_left_sinfreq2", 0, 0),
     # And same for the right
-    Gene("basis_right_const", -5.0, 5.0),
-    Gene("basis_right_poly1", -3, 3),
-    Gene("basis_right_poly2", -3, 3),
-    Gene("basis_right_poly3", -3, 3),
+    Gene("basis_right_const", -10.0, 10.0),
+    Gene("basis_right_poly1", -7.0, 7.0),
+    Gene("basis_right_poly2", -4.0, 4.0),
+    Gene("basis_right_poly3", -2.0, 2.0),
     Gene("basis_right_poly4", 0, 0),
     Gene("basis_right_poly5", 0, 0),
-    Gene("basis_right_sinamp1", -8, 8),
-    Gene("basis_right_sinfreq1", -0.01, +0.01),
-    Gene("basis_right_sinamp2", -8, 8),
-    Gene("basis_right_sinfreq2", -0.01, +0.01),
+    Gene("basis_right_sinamp1", 0, 0),
+    Gene("basis_right_sinfreq1", 0, 0),
+    Gene("basis_right_sinamp2", 0, 0),
+    Gene("basis_right_sinfreq2", 0, 0),
 ]
 
 # Simulation parameters

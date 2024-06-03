@@ -59,11 +59,11 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             return False
             
         # If the creature goes too far down, then it's over
-        if state[2] > 50:
+        if state[2] > 40:
             return False
         
         # If the creature spins too much, then it's over
-        angular_velocity_limit = 7
+        angular_velocity_limit = 5
         if np.any(np.abs(state[13:16]) > angular_velocity_limit):
             return False
         
@@ -92,8 +92,9 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
                 fitness = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["planar_distance_travelled"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["downwards_position"] = globals.FITNESS_PENALTY_INVALID_STATE
-                #fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+                # #fitness_components["average_lateral_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["max_angular_divergence"] = globals.FITNESS_PENALTY_INVALID_STATE
+                fitness_components["max_acceleration"] = globals.FITNESS_PENALTY_INVALID_STATE
                 fitness_components["penalty_invalid_state"] = globals.FITNESS_PENALTY_INVALID_STATE
 
                 #print(f"Simulation went unstable at step={i}, time={t}")
@@ -132,16 +133,23 @@ def evaluate_fitness(virtual_creature, test_mode=1, return_logging_data=True):
             np.mean(np.abs([state[13] for state in state_trajectory])) + \
             np.mean(np.abs([state[14] for state in state_trajectory])) + \
             np.mean(np.abs([state[15] for state in state_trajectory]))
+        
+        # Penalize for accelerating too fast
+        max_acceleration = \
+            np.mean(np.abs([state[6] for state in state_trajectory])) + \
+            np.mean(np.abs([state[7] for state in state_trajectory])) + \
+            np.mean(np.abs([state[8] for state in state_trajectory]))
 
         # Fitness is a mix of these, accounting for positive/negative. Note that
         # we are trying to maximize this!
-        fitness = 10 * planar_distance_travelled - 500 * downwards_position - 400 * max_angular_divergence
+        fitness = 10 * planar_distance_travelled - 1000 * downwards_position - 800 * max_angular_divergence - 1000 * max_acceleration
 
         # Store the fitness components
         fitness_components["planar_distance_travelled"] = planar_distance_travelled
         fitness_components["downwards_position"] = downwards_position
-        #fitness_components["average_lateral_divergence"] = average_lateral_divergence
+        # #fitness_components["average_lateral_divergence"] = average_lateral_divergence
         fitness_components["max_angular_divergence"] = max_angular_divergence
+        fitness_components["max_acceleration"] = max_acceleration
         fitness_components["penalty_invalid_state"] = 0
 
     elif test_mode == 2:

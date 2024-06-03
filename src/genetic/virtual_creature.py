@@ -176,8 +176,8 @@ class VirtualCreature:
         # Sigmoid *2 - 1 the total so that it's in the range -1 to 1
         result = (2 / (1 + np.exp(-total*0.005))) - 1
 
-        # Now scale it into the range [-25deg, +25deg]
-        rad25deg = np.pi * 15 / 180
+        # Now scale it into the range [-Xdeg, +Xdeg]
+        rad25deg = np.pi * 25 / 180
         result = result * rad25deg
 
         #print(f"poly: {polynomial:.2f}, sin: {sinusoid:.2f}, total: {total:.2f}, result: {result:.2f}")
@@ -342,6 +342,9 @@ class VirtualCreature:
             wing_angle_right = 0
         left_wing_vertices  = left_wing_vertices  @ get_wing_angle_rot(wing_angle_left)
         right_wing_vertices = right_wing_vertices @ get_wing_angle_rot(wing_angle_right)
+
+        # We also just want a cube for the body
+        # TODO
 
         # Now we can construct the full vertices and faces
         vertices.extend(left_wing_vertices)
