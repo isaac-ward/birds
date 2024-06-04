@@ -27,6 +27,7 @@ class VirtualCreature:
 
         # Kinematic parameters (describe it in the world)
         self.reset_state()
+        self.init_stall()
 
     @classmethod
     def random_init(cls):
@@ -44,7 +45,8 @@ class VirtualCreature:
         quaternions,
         angular_velocity,
         wing_angle_left,
-        wing_angle_right
+        wing_angle_right,
+        euler_angles,
     ):
         """
         Updates the state of the virtual creature by one step
@@ -59,6 +61,8 @@ class VirtualCreature:
         # Wing angles
         self.wing_angle_left = wing_angle_left
         self.wing_angle_right = wing_angle_right
+
+        self.euler_angles = euler_angles
     
     def reset_state(self):
         """
@@ -66,12 +70,13 @@ class VirtualCreature:
         """
         self.update_state(
             position_xyz=np.zeros(3),
-            velocity_xyz=np.array([5.0, 0.0, 0.0]),
+            velocity_xyz=np.array([30, 0.0, 0.0]),
             acceleration_xyz=np.zeros(3),
             quaternions=np.array([0.0, 0.0, 0.0, 1.0]),
             angular_velocity=np.zeros(3),
             wing_angle_left=self.calc_wing_angle(0, "left"),
-            wing_angle_right=self.calc_wing_angle(0, "right")
+            wing_angle_right=self.calc_wing_angle(0, "right"),
+            euler_angles=np.zeros(3),
         )
 
     def get_state_vector(self):
@@ -84,9 +89,17 @@ class VirtualCreature:
             self.acceleration_xyz,
             self.quaternions,
             self.angular_velocity,
-            [self.wing_angle_left, self.wing_angle_right]
+            [self.wing_angle_left, self.wing_angle_right],
+            self.euler_angles,
         ])
         return vector
+    
+    def init_stall(self):
+        self.has_stalled = False
+
+    def update_stall(self,
+                     has_stalled):
+        self.has_stalled=has_stalled
     
     def get_dynamics_state_vector(self):
         """
@@ -174,7 +187,8 @@ class VirtualCreature:
         total = polynomial + sinusoid
 
         # Sigmoid *2 - 1 the total so that it's in the range -1 to 1
-        result = (2 / (1 + np.exp(-total*0.005))) - 1
+        control_parameter = 0.02 # if this is higher then the bird can create higher wing angles / exert more control
+        result = (2 / (1 + np.exp(-total*control_parameter))) - 1
 
         # Now scale it into the range [-Xdeg, +Xdeg]
         rad25deg = np.pi * 25 / 180
@@ -197,10 +211,10 @@ class VirtualCreature:
             "px (+forward, -backward)", "py (+right, -left)", "pz (+down, -up)",
             "vx", "vy", "vz",
             "ax", "ay", "az",
-            #"rx (roll)", "ry (yaw)", "rz (pitch)",
             "qx", "qy", "qz", "qw",
             "ωx", "ωy", "ωz",
-            "wing_angle_left", "wing_angle_right"
+            "wing_angle_left", "wing_angle_right",
+            "rx (roll)", "ry (pitch)", "rz (yaw)"
         ]
     
     def crossover(self, other):

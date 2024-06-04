@@ -52,7 +52,7 @@ def solve_ga(
         fitness_scores_per_generation.append(fitness_scores)
 
         # Select the fittest individuals to be parents
-        parents = select_fittest_individuals(population, fitness_scores, num_parents=num_parents_per_generation, method="truncation") #can be truncation, tournament, roulette for method
+        parents, parent_indices = select_fittest_individuals(population, fitness_scores, num_parents=num_parents_per_generation, method="truncation") #can be truncation, tournament, roulette for method
 
         # Create the next generation by crossing over and mutating the parents
         children = []
@@ -71,6 +71,9 @@ def solve_ga(
 
             # Who was the mightiest of them all?
             fittest_index = np.argmax(fitness_scores)
+            print("")
+            print(f"The highest fitness encountered this generation was creature {fittest_index} with fitness {fitness_scores[fittest_index]:.2f}")
+            print("")
 
             # Save the fittest individual as a string
             with open(f"{generation_folder}/fittest_individual.txt", "w") as f:
@@ -90,7 +93,8 @@ def solve_ga(
             vis.plot_fitnesses(
                 f"{generation_folder}/fitnesses.png",
                 fitness_scores,
-                fitness_components
+                fitness_components,
+                highlight_indices=parent_indices
             )
 
             # Log the state trajectories for the best individual
@@ -159,15 +163,15 @@ if __name__ == "__main__":
     log_folder = utils.make_log_folder()
     
     # Run the genetic algorithm to solve the problem
-    population_size = 1024
+    population_size = 16
     num_parents_per_generation = math.ceil(0.2 * population_size)
     best_individual = solve_ga(
         population_size=population_size,
-        num_generations=10,
+        num_generations=16,
         num_parents_per_generation=num_parents_per_generation,
         log_folder=log_folder,
         logging=True,
-        log_videos=True,
+        log_videos=False,
     )
 
     # Print the best individual

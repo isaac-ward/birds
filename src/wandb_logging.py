@@ -130,7 +130,7 @@ def log_main_genetic_run_to_wandb(project_name, run_name, log_folder):
 
 # If this is ran as a script get the latest run from the project and fo a full log
 if __name__ == "__main__":
-    project_name = "birds"
+    project_name = "a222-project"
     name_prefix = "main-genetic"
     log_folder = get_logs_folder()
 

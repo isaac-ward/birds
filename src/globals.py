@@ -18,38 +18,39 @@ CHROMOSOME_DEFINITION = [
     GeneDiscrete("airfoil_handwing", 0, 0), # 2
     # Control parameters
     # Constant parameters
-    Gene("basis_left_const", -10.0, 10.0),
-    Gene("basis_left_poly1", -7.0, 7.0),
-    Gene("basis_left_poly2", -4.0, 4.0),
-    Gene("basis_left_poly3", -2.0, 2.0),
+    Gene("basis_left_const", -0.05, 0.05),
+    Gene("basis_left_poly1", -0.01, 0.01),
+    Gene("basis_left_poly2", -0.01, 0.01),
+    Gene("basis_left_poly3", -0.01, 0.01),
     Gene("basis_left_poly4", 0, 0),
     Gene("basis_left_poly5", 0, 0),
     # 2 sinusoids
-    Gene("basis_left_sinamp1", 0, 0),
-    Gene("basis_left_sinfreq1", 0, 0),
+    Gene("basis_left_sinamp1", -0.05, 0.05),
+    Gene("basis_left_sinfreq1", -0.01, 0.01),
     Gene("basis_left_sinamp2", 0, 0),
     Gene("basis_left_sinfreq2", 0, 0),
     # And same for the right
-    Gene("basis_right_const", -10.0, 10.0),
-    Gene("basis_right_poly1", -7.0, 7.0),
-    Gene("basis_right_poly2", -4.0, 4.0),
-    Gene("basis_right_poly3", -2.0, 2.0),
+    Gene("basis_right_const", -0.05, 0.05),
+    Gene("basis_right_poly1", -0.01, 0.01),
+    Gene("basis_right_poly2", -0.01, 0.01),
+    Gene("basis_right_poly3", -0.01, 0.01),
     Gene("basis_right_poly4", 0, 0),
     Gene("basis_right_poly5", 0, 0),
-    Gene("basis_right_sinamp1", 0, 0),
-    Gene("basis_right_sinfreq1", 0, 0),
+    Gene("basis_right_sinamp1", -0.05, 0.05),
+    Gene("basis_right_sinfreq1", -0.01, 0.01),
     Gene("basis_right_sinamp2", 0, 0),
     Gene("basis_right_sinfreq2", 0, 0),
 ]
 
 # Simulation parameters
-SIMULATION_T = 16 # may be cut short if unstable
+SIMULATION_T = 7 # may be cut short if unstable
 DT = 0.001
 
 # Global aerodynamic parameters
 AIR_DENSITY = 1.225 #kg/m^3
 GRAVITY = 9.81      #m/s^2
 BIRD_DENSITY = 10   #kg/m^3
+MAX_ANGULAR_VELOCITY = 7 #rad/s
 
 # Fitness Constants
 FITNESS_PENALTY_INVALID_STATE = -1e4
@@ -76,3 +77,29 @@ AIRFOIL_DATABASE = {
 def wrapRads(angle:float) -> float:
     wrapped_angle = (angle + np.pi) % (2 * np.pi) - np.pi
     return wrapped_angle
+
+def quaternion_to_euler(quat):
+    """
+    Convert a quaternion into Euler angles (roll, pitch, yaw).
+    Quaternion format: [q1, q2, q3, q0] where q0 is the scalar part.
+    """
+    q1, q2, q3, q0 = quat
+
+    # Roll (x-axis rotation)
+    sinr_cosp = 2 * (q0 * q1 + q2 * q3)
+    cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2)
+    roll = np.arctan2(sinr_cosp, cosr_cosp)
+
+    # Pitch (y-axis rotation)
+    sinp = 2 * (q0 * q2 - q3 * q1)
+    if np.abs(sinp) >= 1:
+        pitch = np.sign(sinp) * np.pi / 2  # Use 90 degrees if out of range
+    else:
+        pitch = np.arcsin(sinp)
+
+    # Yaw (z-axis rotation)
+    siny_cosp = 2 * (q0 * q3 + q1 * q2)
+    cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3)
+    yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+    return np.array([roll, pitch, yaw])

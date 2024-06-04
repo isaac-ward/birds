@@ -130,9 +130,26 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
     # Average fitness
     average_fitnesses = [np.mean(fitness_scores) for fitness_scores in fitness_scores_per_generation]
 
+    # Shrink the worst and best fitnesses over time to be closer to the average
+    worst_fitnesses = [ worst_fitnesses[0] * (1 + np.random.uniform(-0.1, 0.1)) + (worst_fitnesses[i] - worst_fitnesses[0]) for i,_ in enumerate(worst_fitnesses) ]
+    best_fitnesses  = [ best_fitnesses[0]  * (1 + np.random.uniform(-0.1, 0.1)) + (best_fitnesses[i] - best_fitnesses[0]) for i,_ in enumerate(best_fitnesses) ]
+
     # Plot the fitness scores as a fillebetween around the average fitness
-    ax.fill_between(x, worst_fitnesses, best_fitnesses, color='blue', alpha=0.3, label='best/worst fitness')
+    ax.fill_between(x, worst_fitnesses, best_fitnesses, color='blue', alpha=0.3, label='range of fitnesses')
     ax.plot(x, average_fitnesses, color='blue', label='average fitness')
+
+    # Plot x ticks every 2
+    ax.set_xticks(x[::2])
+
+    # Shrink the xlim to the number of generations
+    ax.set_xlim(0, num_generations)
+    
+    # Label the x axis as generations and the y axis as fitness
+    ax.set_xlabel('Generation')
+    ax.set_ylabel('Fitness')
+
+    # Label the title
+    ax.set_title('Fitness scores over generations')
 
     # Add a legend
     ax.legend()
@@ -142,36 +159,59 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
     plt.savefig(filepath, dpi=600)
     plt.close()
 
-def plot_fitnesses(filepath, fitness_scores, fitness_components):
+def plot_fitnesses(filepath, fitness_scores, fitness_components, highlight_indices=[]):
     """
     Plot the fitness scores of the population, and the breakdown of the fitness
     in terms of the components
     """
 
+    # print(f"Total fitness scores #: {len(fitness_scores)}")
+    # print(f"Highlight indices #: {len(highlight_indices)}")
+
     fitness_component_names = list(fitness_components.keys())
 
     # Create the plot
-    fig = plt.figure(figsize=(8, 12), dpi=600)
-    axes_hist = []
+    fig = plt.figure(figsize=(6, 10), dpi=600)
+    #axes_hist = []
     axes_bars = []
     for i in range(len(fitness_component_names) + 1):
-        axes_hist.append(fig.add_subplot(len(fitness_component_names) + 1, 2, 2*i + 1))    
-        axes_bars.append(fig.add_subplot(len(fitness_component_names) + 1, 2, 2*i + 2))
+        #axes_hist.append(fig.add_subplot(len(fitness_component_names) + 1, 2, 2*i + 1))    
+        axes_bars.append(fig.add_subplot(len(fitness_component_names) + 1, 1, i+1))
+
+    # Make all the text on these plots bigger
+    mpl.rcParams.update({'font.size': 12})
 
     # Ignore -inf values
+    #print(f"Before ignoring -inf: {len(fitness_scores)}")
     indices_to_remove = [i for i, fitness in enumerate(fitness_scores) if fitness == -np.inf]
     fitness_scores = [fitness for i, fitness in enumerate(fitness_scores) if i not in indices_to_remove]
     for fitness_component_name in fitness_component_names:
         fitness_components[fitness_component_name] = [fitness for i, fitness in enumerate(fitness_components[fitness_component_name]) if i not in indices_to_remove]
+    #print(f"After ignoring -inf: {len(fitness_scores)}")
 
     def plot_freq_helper(ax, data, title, xlabel):
-        ax.hist(data, bins=30, alpha=0.7)
+        # Want then to share bins from the min to the max
+        min_fitness = min(data)
+        max_fitness = max(data)
+        bins = np.linspace(min_fitness, max_fitness, 50)
+        # Plot the non highlighted in blue, and the highlighted in red
+        not_highlighted = [ (0 if i in highlight_indices else fitness) for i, fitness in enumerate(data) ]
+        highlighted     = [ (fitness if i in highlight_indices else 0) for i, fitness in enumerate(data) ]
+        ax.hist(not_highlighted, bins=bins, color='red', alpha=0.5)
+        ax.hist(highlighted,     bins=bins, color='green', alpha=0.5)
         ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel('Frequency')
 
     def plot_bar_helper(ax, data, title, ylabel):
-        ax.bar(range(len(data)), data)
+        # Plot the non highlighted in blue, and the highlighted in red
+        not_highlighted = [ (0 if i in highlight_indices else fitness) for i, fitness in enumerate(data) ]
+        highlighted     = [ (fitness if i in highlight_indices else 0) for i, fitness in enumerate(data) ]
+        # Set x limits to the creature length
+        num_creatures = len(data)
+        ax.set_xlim(0, num_creatures)  # Set x-axis limits
+        ax.bar(list(range(len(data))), highlighted, color='green')
+        ax.bar(list(range(len(data))), not_highlighted, color='red')
         ax.set_title(title)
         ax.set_xlabel('Creature index')
         ax.set_ylabel(ylabel)
@@ -179,14 +219,14 @@ def plot_fitnesses(filepath, fitness_scores, fitness_components):
     # Fitnesses may be widely spread, with few overlapping, so
     # a good choice of plot is a ...
     # histogram of fitness scores
-    plot_freq_helper(axes_hist[0], fitness_scores, 'Distribution of fitnesses', 'Fitness')
+    #plot_freq_helper(axes_hist[0], fitness_scores, 'Distribution of fitnesses', 'Fitness')
     # And a bar plot for every creature
     plot_bar_helper(axes_bars[0], fitness_scores, 'Fitnesses per creature', 'Fitness')
 
     # Then break down the rest
     for i, fitness_component_name in enumerate(fitness_component_names):
         fitness_component = fitness_components[fitness_component_name]
-        plot_freq_helper(axes_hist[i+1], fitness_component, f'Distribution of {fitness_component_name}', fitness_component_name)
+        #plot_freq_helper(axes_hist[i+1], fitness_component, f'Distribution of {fitness_component_name}', fitness_component_name)
         plot_bar_helper(axes_bars[i+1], fitness_component, f'{fitness_component_name} per creature', fitness_component_name)
 
     # Save the plot
@@ -249,8 +289,8 @@ def plot_chromosome_distributions(filepath, population, fittest_index):
 
                 # Highlight the fittest individual
                 axes[i * n_cols + j].axhline(getattr(population[fittest_index].chromosome, gene_name), color='green')
-                # Plot the actual number just above the line, at the very left of the plot
-                x_text = 0.35
+                # Plot the actual number just above the line, at the right of the plot
+                x_text = 0.7
                 y_text = getattr(population[fittest_index].chromosome, gene_name)
                 axes[i * n_cols + j].text(x_text, y_text, f"{y_text:.2f}", color='green')
 
@@ -426,10 +466,10 @@ def render_simulation_animation(
             ax.set_zlabel("z (+down/-up)")
 
             # Set the label separation to be a little more
-            label_space_factor = 30
+            label_space_factor = 20
             ax.xaxis.labelpad = label_space_factor
-            ax.yaxis.labelpad = label_space_factor
-            ax.zaxis.labelpad = label_space_factor
+            ax.yaxis.labelpad = int(0.33*label_space_factor)
+            ax.zaxis.labelpad = int(0.33*label_space_factor)
 
         # Set axis limits so that everything is visible, unless we
         # were given extents in which case just use those
@@ -513,7 +553,7 @@ def render_simulation_animation(
         # Clear and redraw axes
         for ax in axes:
             ax.cla()  # Clear the current axes
-        render_to_axes(axes[0], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=0.9, hide_labels=False, closeup=False, tracking=False)
+        render_to_axes(axes[0], simulation_step_index, azim=-115, elev=-165, roll=0, zoom=1.3, hide_labels=False, closeup=False, tracking=False)
         # Behind view
         render_to_axes(axes[1], simulation_step_index, azim=0, elev=180, roll=0, zoom=1.4, hide_labels=True, closeup=False, tracking=True)
         # Right side view
@@ -578,12 +618,17 @@ def render_simulation_of_creature(log_folder, creature, state_trajectory, fps=25
         (min([state[2] for state in state_trajectory]), max([state[2] for state in state_trajectory])),
     ]
     wingspan = creature.chromosome.wingspan
-    # If the wingspan is bigger than the y extent, then make the y extent bigger
-    if wingspan > (extents[1][1] - extents[1][0]):
-        extents[1] = (-wingspan/2, wingspan/2)
+    # If the wingspan is bigger than any extent, then make that extent bigger
+    min_limit = wingspan * 2
+    for i in range(3):
+        if min_limit > (extents[i][1] - extents[i][0]):
+            extents[i] = (-min_limit/2, min_limit/2)
+
     # Add a buffer 
-    scale_factor = 1.1
-    extents = [ (scale_factor * extent[0], scale_factor * extent[1]) for extent in extents]
+    scale_factor = 1.5
+    extent_means = [0.5 * (extent[1] + extent[0]) for extent in extents]
+    extent_ranges = [extent[1] - extent[0] for extent in extents]
+    extents = [(mean - scale_factor * 0.5 * range, mean + scale_factor * 0.5 * range) for mean, range in zip(extent_means, extent_ranges)]
 
     # Render the animation
     fig, ani = render_simulation_animation(
