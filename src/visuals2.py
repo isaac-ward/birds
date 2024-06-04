@@ -129,11 +129,7 @@ def plot_fitnesses_over_time(filepath, fitness_scores_per_generation):
     best_fitnesses  = [fitness if fitness != -np.inf else np.nan for fitness in best_fitnesses]
     # Average fitness
     average_fitnesses = [np.mean(fitness_scores) for fitness_scores in fitness_scores_per_generation]
-
-    # Shrink the worst and best fitnesses over time to be closer to the average
-    worst_fitnesses = [ worst_fitnesses[0] * (1 + np.random.uniform(-0.1, 0.1)) + (worst_fitnesses[i] - worst_fitnesses[0]) for i,_ in enumerate(worst_fitnesses) ]
-    best_fitnesses  = [ best_fitnesses[0]  * (1 + np.random.uniform(-0.1, 0.1)) + (best_fitnesses[i] - best_fitnesses[0]) for i,_ in enumerate(best_fitnesses) ]
-
+    
     # Plot the fitness scores as a fillebetween around the average fitness
     ax.fill_between(x, worst_fitnesses, best_fitnesses, color='blue', alpha=0.3, label='range of fitnesses')
     ax.plot(x, average_fitnesses, color='blue', label='average fitness')
